@@ -1,4 +1,4 @@
-
+![](./GitBranchingStrategy.png)
 # Git Branching and Promotion Workflow
 
 1. Creating DEV/QA/PPD/PROD from a production baseline.
