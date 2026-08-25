@@ -51,6 +51,9 @@ The goal is to prove that the **CI/CD process can be fully converted** without b
 
 ![](./Migration6.png)
 
+## understand OIDC
+![](./Migration7.png)
+
 
 
 
