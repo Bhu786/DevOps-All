@@ -1,6 +1,7 @@
 The problem described is that while **Horizontal Pod Autoscaler (HPA)** can increase the number of application pods during high traffic, those pods end up in a **Pending** state when the existing worker nodes lack the necessary CPU or memory capacity to host them (1:24 - 2:06).
 
 The solution is to implement a **Cluster Autoscaler** (3:01). This component automatically monitors the cluster for pending pods and provisions additional worker nodes to provide the necessary capacity (3:09 - 3:15). 
+( cluster autoscaler ==> matlab node ko increase or decrease as per traffic)
 
 **Key steps for implementation include:**
 * **Prepare Environment:** Set up an *Amazon EKS* cluster with a managed worker node group (4:10).
