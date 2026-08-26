@@ -6,7 +6,12 @@ yehi sab karo install n all things baki sab sab jagh vhi ho rah hota hia hai.
 
 ![](./ansible1.png)
 
-
+===========================
+# PRQATICAL
+1. ab 3 ec2 bnao aws par aur ak no master node nam do baki ko worker 1 ,2 do
+2. now master ec2 ko locally conneect karo jaise tum karte hoi pem key v
+3. master ec2 par sudo update chalo then ansible install isse pahle pythpon bhi kyu ansible ko pyhton ka requiredment hota isse bna hai iss leyue.
+4. now ssh ki thrOUGH CONNECTION KAREGE MASTER N WORKER KO.
 
 
 # ANSIBLE — INTERVIEW NOTES
