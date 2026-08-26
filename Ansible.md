@@ -1,3 +1,14 @@
+Ansible; configuration as tool hai 
+
+ak master node bnate hia  ya bole ak server isse par ansible install kar dete hia 
+# dushre jagh ansible install karne ki jarurat nhi iss leye yeh agentless hai aur yeh pull requestion
+yehi sab karo install n all things baki sab sab jagh vhi ho rah hota hia hai.
+
+![](./ansible1.png)
+
+
+
+
 # ANSIBLE — INTERVIEW NOTES
 
 **Start-to-End • Simple to Learn • Easy to Remember • Interview Ready**
