@@ -146,6 +146,7 @@ Argo CD
 Kubernetes Cluster
 ```
 
+
 ### Interview Answer
 
 > **GitOps means Git is the source of truth for deployment configuration. Changes are made through Git commits, and Argo CD uses that desired state to reconcile Kubernetes.**
