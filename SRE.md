@@ -1,4 +1,9 @@
-Absolutely. I’ll **keep all the concepts from your PDF**, but rewrite them in a much easier, interview-friendly way. I’ll also add **What / Why / Need / Example** so you understand *why SRE concepts are used*, not just memorize definitions.
+**Reliable = A system that works correctly and consistently when needed.**
+
+
+
+
+. I’ll **keep all the concepts from your PDF**, but rewrite them in a much easier, interview-friendly way. I’ll also add **What / Why / Need / Example** so you understand *why SRE concepts are used*, not just memorize definitions.
 
 Your PDF covers SRE fundamentals, SLI/SLO/SLA, incident management, monitoring/observability, toil, capacity planning, change management, chaos testing, tools, SRE culture, 5W, hard/cold freeze, and error budgets. 
 
