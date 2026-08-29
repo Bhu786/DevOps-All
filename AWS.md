@@ -1778,5 +1778,1521 @@ Flow Logs / Reachability Analyzer
 
 **Ye networking ka backbone hai.** Is backbone ko samajh lene ke baad scenario-based troubleshooting questions kaafi easy ho jaate hain.
 ====================
-Networking
+Networking End
 =====================
+
+# IAM
+Bilkul. Ab **AWS IAM + Security** ko exactly interview-oriented way mein karte hain—**simple English + simple Hindi meaning + use + real enterprise example + troubleshooting + 6-year experience questions**. Sirf relevant security concepts rakhenge, unnecessary AWS services mein nahi jayenge.
+
+# AWS IAM + SECURITY — COMPLETE INTERVIEW NOTES
+
+## 1. IAM kya hai?
+
+**IAM = Identity and Access Management**
+
+Simple:
+
+> **IAM decides WHO can access WHAT and WHAT they are allowed to do.**
+
+Example:
+
+```text
+Developer
+   |
+   ↓
+IAM
+   |
+   ├── EC2 → allowed
+   ├── S3 → read only
+   └── RDS → denied
+```
+
+IAM ke 3 basic questions:
+
+```text
+WHO?       → Identity
+WHAT?      → Resource
+DO WHAT?   → Permission
+```
+
+---
+
+# 2. Authentication vs Authorization
+
+Ye interview mein bahut important hai.
+
+### Authentication
+
+> **Who are you?**
+
+Example:
+
+```text
+Username + Password
+MFA
+```
+
+### Authorization
+
+> **What are you allowed to do?**
+
+Example:
+
+```text
+User can:
+✓ Read S3
+
+User cannot:
+✗ Delete S3
+```
+
+Remember:
+
+```text
+Authentication → Identity check
+Authorization  → Permission check
+```
+
+---
+
+# 3. IAM User
+
+IAM User represents a person/application identity that needs long-term AWS access.
+
+Example:
+
+```text
+IAM
+ |
+ +-- Developer
+ +-- Tester
+ +-- Admin
+```
+
+User can have:
+
+* Console password
+* Access keys
+* Policies
+
+### But production applications ke liye?
+
+Usually **IAM User access keys hardcode nahi karni chahiye**.
+
+Instead:
+
+> **Use IAM Role + temporary credentials.**
+
+---
+
+# 4. IAM Group
+
+Group multiple IAM users ko organize karta hai.
+
+Example:
+
+```text
+Developers Group
+ |
+ +-- Rahul
+ +-- Amit
+ +-- Priya
+```
+
+Group ko policy:
+
+```text
+S3ReadPolicy
+```
+
+attach kar do.
+
+Then users inherit permissions.
+
+### Why?
+
+Instead of:
+
+```text
+Rahul → policy
+Amit → policy
+Priya → policy
+```
+
+Use:
+
+```text
+Developers Group
+       |
+   S3 Read Policy
+       |
+   All developers
+```
+
+---
+
+# 5. IAM Role
+
+**Role is one of the most important IAM concepts.**
+
+Role provides permissions that can be **assumed** by trusted entities.
+
+Example:
+
+```text
+EC2
+ |
+Assume IAM Role
+ |
+Temporary Credentials
+ |
+S3
+```
+
+Application ke andar:
+
+```text
+EC2
+ ↓
+IAM Role
+ ↓
+S3
+```
+
+No access key hardcoding required.
+
+---
+
+# 6. Real Java application example
+
+Suppose hotel management application EC2 par running hai.
+
+Application ko S3 mein invoices upload karne hain.
+
+Bad approach:
+
+```text
+application.properties
+
+AWS_ACCESS_KEY=xxxx
+AWS_SECRET_KEY=xxxx
+```
+
+❌ Security risk.
+
+Better:
+
+```text
+EC2
+ |
+IAM Role
+ |
+S3 permissions
+```
+
+Application AWS SDK se role credentials use kar leti hai.
+
+### Interview answer
+
+> "For production workloads, we avoid hardcoding access keys. We attach an IAM role to the compute resource and use temporary credentials provided through the AWS credential provider chain."
+
+---
+
+# 7. IAM Policy
+
+Policy defines permissions.
+
+Simple:
+
+> **Policy tells IAM what actions are allowed or denied on which resources.**
+
+Example:
+
+```text
+Allow
+Action:
+s3:GetObject
+
+Resource:
+specific bucket
+```
+
+Conceptually:
+
+```text
+WHO
+ ↓
+CAN DO WHAT
+ ↓
+ON WHICH RESOURCE
+```
+
+---
+
+# 8. Policy ke important elements
+
+Typical IAM policy:
+
+```json
+{
+  "Effect": "Allow",
+  "Action": "s3:GetObject",
+  "Resource": "arn:aws:s3:::hotel-bucket/*"
+}
+```
+
+Understand:
+
+### Effect
+
+```text
+Allow
+Deny
+```
+
+### Action
+
+What operation?
+
+```text
+s3:GetObject
+s3:PutObject
+s3:DeleteObject
+```
+
+### Resource
+
+Kis AWS resource par?
+
+```text
+S3 bucket/object
+```
+
+### Principal
+
+Who is allowed?
+
+Mostly resource-based policies mein important.
+
+---
+
+# 9. ARN
+
+ARN = **Amazon Resource Name**
+
+AWS resources ko uniquely identify karta hai.
+
+Example:
+
+```text
+arn:aws:s3:::hotel-bucket
+```
+
+Concept:
+
+```text
+arn
+ ↓
+partition
+ ↓
+service
+ ↓
+region
+ ↓
+account
+ ↓
+resource
+```
+
+Har service ka ARN format slightly different ho sakta hai.
+
+---
+
+# 10. Managed Policy
+
+AWS ya customer-created reusable policy.
+
+Two major types:
+
+### AWS Managed Policy
+
+AWS provides it.
+
+Example:
+
+```text
+AmazonS3ReadOnlyAccess
+```
+
+### Customer Managed Policy
+
+Company khud create karti hai.
+
+Example:
+
+```text
+HotelApplicationS3ReadPolicy
+```
+
+Reusable across identities.
+
+---
+
+# 11. Inline Policy
+
+Policy directly ek particular identity/resource relationship par embedded hoti hai.
+
+Example:
+
+```text
+IAM Role
+   |
+Inline Policy
+```
+
+Usually reusable permission model ke liye customer-managed policies easier to manage hote hain.
+
+---
+
+# 12. Identity-based Policy
+
+Policy identity par attach hoti hai.
+
+Identity:
+
+```text
+User
+Group
+Role
+```
+
+Example:
+
+```text
+ApplicationRole
+      |
+S3ReadPolicy
+```
+
+---
+
+# 13. Resource-based Policy
+
+Policy directly resource par attach hoti hai.
+
+Example:
+
+```text
+S3 Bucket
+   |
+Bucket Policy
+```
+
+It can specify a **Principal**.
+
+Example concept:
+
+```text
+S3 Bucket
+ |
+Allow Account B
+ |
+Read objects
+```
+
+---
+
+# 14. Identity Policy vs Resource Policy
+
+| Identity-based               | Resource-based                 |
+| ---------------------------- | ------------------------------ |
+| User/group/role par attached | Resource par attached          |
+| Principal usually implicit   | Principal explicitly specified |
+| Example IAM policy           | Example S3 bucket policy       |
+| "This identity can..."       | "This resource allows..."      |
+
+---
+
+# 15. Trust Policy
+
+**Role ka trust policy batata hai ki ROLE KO KAUN ASSUME KAR SAKTA HAI.**
+
+Ye bahut important distinction hai.
+
+Example:
+
+```text
+EC2
+ |
+Can assume?
+ ↓
+IAM Role
+```
+
+Trust policy:
+
+```text
+EC2 service
+→ allowed to assume role
+```
+
+### Remember:
+
+```text
+Trust Policy
+= Who can assume this role?
+
+Permission Policy
+= After assuming role, what can it do?
+```
+
+---
+
+# 16. Trust Policy vs Permission Policy
+
+Interview favourite.
+
+### Trust Policy
+
+```text
+WHO CAN ASSUME ROLE?
+```
+
+### Permission Policy
+
+```text
+WHAT CAN ROLE DO?
+```
+
+Example:
+
+```text
+EC2
+ |
+Trust Policy
+ ↓
+ApplicationRole
+ |
+Permission Policy
+ ↓
+S3:GetObject
+```
+
+---
+
+# 17. AssumeRole
+
+An identity can assume a role if trust/permissions allow it.
+
+Example:
+
+```text
+Developer
+    |
+ AssumeRole
+    ↓
+ProductionRole
+    |
+    ↓
+Production resources
+```
+
+This is common for cross-account access.
+
+---
+
+# 18. STS
+
+STS = **AWS Security Token Service**
+
+Provides temporary security credentials.
+
+Concept:
+
+```text
+Role
+ ↓
+STS
+ ↓
+Temporary Credentials
+ ↓
+AWS Service
+```
+
+Temporary credentials generally consist of:
+
+```text
+Access Key ID
+Secret Access Key
+Session Token
+```
+
+### Why?
+
+Temporary credentials are safer than distributing long-lived credentials.
+
+---
+
+# 19. IAM Role vs IAM User
+
+| IAM User                                                 | IAM Role                      |
+| -------------------------------------------------------- | ----------------------------- |
+| Represents identity                                      | Assumable identity            |
+| Often person/service identity                            | Temporary permissions         |
+| Can have long-term credentials                           | Usually temporary credentials |
+| Console/password/access keys possible                    | Assumed by trusted entity     |
+| Applications generally shouldn't use hardcoded user keys | Preferred for AWS workloads   |
+
+---
+
+# 20. Least Privilege
+
+**Give only the permissions actually required.**
+
+Bad:
+
+```text
+Application
+ ↓
+AdministratorAccess
+```
+
+❌ Too much access.
+
+Better:
+
+```text
+Application
+ ↓
+s3:GetObject
+s3:PutObject
+```
+
+Only required permissions.
+
+### Interview line:
+
+> "We follow the principle of least privilege and grant only the minimum permissions required for the workload."
+
+---
+
+# 21. Wildcard permissions
+
+Dangerous:
+
+```text
+Action: "*"
+Resource: "*"
+```
+
+Means practically everything allowed depending on context.
+
+Avoid unless genuinely required.
+
+Better:
+
+```text
+Action:
+s3:GetObject
+
+Resource:
+specific bucket/object path
+```
+
+---
+
+# 22. Explicit Deny
+
+This is **extremely important**.
+
+Suppose:
+
+```text
+Policy A
+Allow S3 Delete
+
+Policy B
+Deny S3 Delete
+```
+
+Final result:
+
+```text
+DENY
+```
+
+Because:
+
+> **Explicit Deny overrides Allow.**
+
+Remember:
+
+```text
+Explicit Deny
+      ↓
+wins
+```
+
+---
+
+# 23. IAM Policy Evaluation — Simple Flow
+
+When request comes:
+
+```text
+AWS Request
+    |
+Authentication
+    |
+Policies evaluated
+    |
+Is there explicit Deny?
+    |
+   YES → DENY
+    |
+   NO
+    |
+Is there applicable Allow?
+    |
+   YES → ALLOW
+    |
+   NO → DENY
+```
+
+Important default principle:
+
+> **By default, access is denied unless an applicable Allow exists.**
+
+---
+
+# 24. MFA
+
+MFA = Multi-Factor Authentication.
+
+Example:
+
+```text
+Password
+ +
+Authenticator code
+```
+
+Even if password is compromised, attacker needs another factor.
+
+Use especially for:
+
+* privileged human access
+* root account
+* sensitive administrative operations
+
+---
+
+# 25. Root User
+
+AWS account root user has extremely powerful permissions.
+
+Best practice:
+
+```text
+Root
+ ↓
+Secure strongly
+ ↓
+Enable MFA
+ ↓
+Avoid everyday usage
+```
+
+Don't use root user for normal application/development operations.
+
+---
+
+# 26. Access Keys
+
+Used for programmatic AWS API access.
+
+```text
+Access Key ID
++
+Secret Access Key
+```
+
+### Never:
+
+```text
+GitHub
+.properties
+source code
+Docker image
+```
+
+mein credentials commit/embed mat karo.
+
+---
+
+# 27. Temporary Credentials
+
+Preferred for many workloads.
+
+```text
+IAM Role
+ ↓
+STS
+ ↓
+Temporary credentials
+```
+
+They expire automatically.
+
+This reduces the risk associated with long-lived secrets.
+
+---
+
+# 28. Cross-account access
+
+Suppose:
+
+```text
+Account A
+Developer
+
+        ↓ AssumeRole
+
+Account B
+Production
+```
+
+Common approach:
+
+```text
+Account B
+ProductionRole
+ |
+Trust Account A
+```
+
+Developer assumes the role.
+
+No need to permanently create a user in production account just for this access pattern.
+
+---
+
+# 29. Cross-account S3 example
+
+```text
+Account A
+Application
+    |
+    | Assume Role
+    ↓
+Account B
+S3 Access Role
+    |
+    ↓
+S3 Bucket
+```
+
+Need to correctly configure:
+
+```text
+Trust policy
++
+Permission policy
++
+Resource policy where applicable
+```
+
+---
+
+# 30. Secrets Manager
+
+Application secrets securely store karne ke liye.
+
+Examples:
+
+```text
+DB password
+API key
+OAuth secret
+Application credential
+```
+
+Instead of:
+
+```text
+application.properties
+
+password=MyPassword123
+```
+
+Use:
+
+```text
+Application
+    |
+Secrets Manager
+    |
+Secret
+```
+
+Application retrieves it securely with appropriate IAM permissions.
+
+---
+
+# 31. KMS
+
+KMS = **Key Management Service**
+
+Encryption keys create/manage/control karne ke liye.
+
+Simple:
+
+```text
+Data
+ ↓
+Encryption
+ ↓
+KMS Key
+ ↓
+Encrypted Data
+```
+
+KMS commonly integrates with:
+
+* S3
+* EBS
+* RDS
+* Secrets Manager
+* many other AWS services
+
+---
+
+# 32. Encryption at Rest vs in Transit
+
+### At Rest
+
+Stored data encrypted.
+
+```text
+Database
+Disk
+S3
+Backup
+```
+
+### In Transit
+
+Network ke through data encrypted.
+
+```text
+Client
+  |
+ HTTPS/TLS
+  |
+Server
+```
+
+Remember:
+
+```text
+At Rest     → stored data
+In Transit  → moving data
+```
+
+---
+
+# 33. KMS vs Secrets Manager
+
+Common confusion.
+
+### KMS
+
+> Encryption keys manage karta hai.
+
+### Secrets Manager
+
+> Secrets store/manage karta hai.
+
+Example:
+
+```text
+Secrets Manager
+      |
+DB password
+      |
+Encryption using KMS
+```
+
+---
+
+# 34. CloudTrail
+
+CloudTrail records AWS API activity/events.
+
+Question:
+
+> **Who changed this security group?**
+
+CloudTrail can help answer:
+
+```text
+Who?
+What?
+When?
+From where?
+Which API call?
+```
+
+Example:
+
+```text
+Someone deleted IAM policy
+        ↓
+CloudTrail
+        ↓
+Find API event
+```
+
+---
+
+# 35. IAM Access Analyzer
+
+Helps identify unintended resource access, especially external/cross-account access.
+
+Example:
+
+```text
+S3 Bucket
+   |
+Public access?
+Cross-account access?
+   ↓
+Access Analyzer
+```
+
+Useful for finding overly broad access configurations.
+
+---
+
+# 36. Permission Boundaries
+
+Advanced IAM concept.
+
+Permission boundary sets the **maximum permissions** an IAM user/role can receive through identity-based policies.
+
+Simple:
+
+```text
+Actual permissions
+       ∩
+Permission boundary
+       ↓
+Effective permissions
+```
+
+Example:
+
+Developer creates a role and attaches:
+
+```text
+AdministratorAccess
+```
+
+But permission boundary limits it to:
+
+```text
+S3 + CloudWatch
+```
+
+So the role cannot exceed the boundary.
+
+---
+
+# 37. Service Control Policies — SCP
+
+Used with **AWS Organizations**.
+
+SCP sets permission guardrails for accounts/organizational units.
+
+Important:
+
+> SCP does **not itself grant permissions**. It can limit what permissions are available.
+
+Concept:
+
+```text
+AWS Organization
+       |
+      SCP
+       |
+   Account
+       |
+ IAM policies
+       |
+Effective access
+```
+
+---
+
+# 38. SCP vs IAM Policy
+
+| IAM Policy                                        | SCP                                  |
+| ------------------------------------------------- | ------------------------------------ |
+| Grants/controls permissions for identity/resource | Organization-level guardrail         |
+| User/Group/Role/resource                          | Account/OU                           |
+| Can grant access                                  | Does not grant access                |
+| Controls what identity can do                     | Limits maximum available permissions |
+
+---
+
+# 39. IAM Identity Center
+
+For workforce users and centralized access to multiple AWS accounts, **IAM Identity Center** is commonly used.
+
+Concept:
+
+```text
+Employee
+   |
+IAM Identity Center
+   |
+Permission Set
+   |
+AWS Account
+```
+
+Useful for centralized workforce access instead of maintaining separate IAM users in every account.
+
+---
+
+# 40. Permission Set
+
+In IAM Identity Center, permission sets define what access users/groups receive in AWS accounts.
+
+Example:
+
+```text
+Developer Permission Set
+        |
+   Read/Developer access
+        |
+Account A
+Account B
+Account C
+```
+
+---
+
+# 41. AWS WAF
+
+Networking mein already dekha tha, but security side se remember:
+
+```text
+Internet
+   |
+  WAF
+   |
+  ALB
+   |
+Application
+```
+
+Protect against web request patterns such as:
+
+* SQL injection
+* XSS
+* malicious requests
+* bot-related patterns
+* IP/rate based rules
+
+---
+
+# 42. Security Group
+
+Again security architecture mein:
+
+```text
+ALB SG
+ ↓
+App SG
+ ↓
+DB SG
+```
+
+Best practice:
+
+```text
+Internet
+   ↓
+ALB SG: 443
+   ↓
+App SG: only from ALB SG
+   ↓
+DB SG: only from App SG
+```
+
+This is much better than:
+
+```text
+DB SG
+ ↓
+0.0.0.0/0
+```
+
+---
+
+# 43. IAM + Networking together — Real Architecture
+
+Suppose enterprise hotel management application:
+
+```text
+                  Internet
+                      |
+                     WAF
+                      |
+                     ALB
+                      |
+                 ALB Security Group
+                      |
+              +-------+-------+
+              |               |
+            App-1           App-2
+              |               |
+         App Security Group
+              |
+          IAM Role
+              |
+       +------+-------+
+       |              |
+      S3           Secrets Manager
+       |              |
+      KMS            KMS
+                      |
+                     DB
+                      |
+                  DB Security Group
+```
+
+IAM controls:
+
+```text
+WHO CAN ACCESS AWS RESOURCES
+```
+
+Security Groups control:
+
+```text
+WHO CAN NETWORK TO THE RESOURCE
+```
+
+This distinction is **very important**.
+
+---
+
+# 44. IAM vs Security Group
+
+Interviewer:
+
+> "If IAM allows access, can application connect to database?"
+
+**Not necessarily.**
+
+IAM and network security are different layers.
+
+```text
+IAM
+ ↓
+AWS API authorization
+
+Security Group
+ ↓
+Network connectivity
+```
+
+Example:
+
+```text
+IAM → S3:GetObject allowed
+
+BUT
+
+Network → DB port 5432 blocked
+```
+
+Application can have correct IAM permissions and still fail due to network configuration.
+
+---
+
+# 45. Real Troubleshooting Scenario #1
+
+### Problem:
+
+> EC2 application is getting AccessDenied while reading S3.
+
+6-year experience answer:
+
+```text
+1. Check which IAM role is attached to EC2.
+2. Verify application is actually using that role.
+3. Check IAM policy.
+4. Verify s3:GetObject permission.
+5. Verify correct bucket/object ARN.
+6. Check bucket policy.
+7. Check for explicit Deny.
+8. Check SCP if organization is used.
+9. Check permission boundary.
+10. Use CloudTrail/IAM policy analysis tools for evidence.
+```
+
+### Strong interview line:
+
+> "I don't immediately modify the policy. First I identify the caller identity and exact AWS API action, then verify identity policy, resource policy, explicit denies, boundaries and organization-level restrictions."
+
+**Ye experienced answer feel deta hai.**
+
+---
+
+# 46. Real Troubleshooting Scenario #2
+
+### Problem:
+
+> Application suddenly stopped accessing S3 after deployment.
+
+Check:
+
+```text
+Old environment
+     ↓
+IAM Role A
+
+New environment
+     ↓
+IAM Role B
+```
+
+Maybe deployment changed the role.
+
+Then:
+
+```text
+Role B
+ ↓
+Missing S3 permission
+```
+
+Fix:
+
+```text
+Correct role
++
+Minimum required permission
+```
+
+---
+
+# 47. Real Troubleshooting Scenario #3
+
+### Problem:
+
+> Developer says "IAM role has S3 access, but S3 still gives AccessDenied."
+
+Don't stop at role policy.
+
+Check:
+
+```text
+Role policy
+      ↓
+Bucket policy
+      ↓
+Explicit Deny
+      ↓
+SCP
+      ↓
+Permission Boundary
+      ↓
+KMS permissions
+      ↓
+Object ownership/encryption configuration
+```
+
+Especially if S3 object is encrypted using KMS:
+
+```text
+S3 access
++
+KMS permission
+```
+
+may both matter.
+
+---
+
+# 48. Real Troubleshooting Scenario #4
+
+### Problem:
+
+> EC2 application cannot retrieve secret.
+
+Check:
+
+```text
+1. EC2 IAM Role
+2. secretsmanager:GetSecretValue
+3. Correct secret ARN
+4. KMS permissions if customer-managed KMS key is involved
+5. VPC endpoint/NAT/network connectivity
+6. Region
+7. Secret resource policy if applicable
+8. CloudTrail
+```
+
+Notice this is a **security + networking** problem.
+
+---
+
+# 49. Real Troubleshooting Scenario #5
+
+### Problem:
+
+> Someone accidentally exposed an S3 bucket.
+
+Experienced approach:
+
+```text
+1. Identify current bucket policy.
+2. Check Block Public Access.
+3. Check ACL/object ownership configuration where relevant.
+4. Check Access Analyzer.
+5. Review CloudTrail for the change.
+6. Remove unintended public access.
+7. Identify who/what made the change.
+8. Add preventive guardrails.
+```
+
+Don't just say:
+
+> "I'll make bucket private."
+
+Explain **how you identify the root cause and prevent recurrence**.
+
+---
+
+# 50. 6-Year Experience — Golden IAM Answer
+
+Interviewer:
+
+> **How do you secure AWS applications?**
+
+Answer:
+
+> "We follow least privilege and avoid long-lived credentials for applications. For workloads running on AWS, we use IAM roles and temporary credentials. We separate access by environment and responsibility, use resource-level permissions where possible, and avoid wildcard permissions. For sensitive data we use encryption with KMS and store secrets in Secrets Manager rather than source code or configuration files. For human access, we use centralized identity and MFA, and CloudTrail for auditing. At the organization level, SCPs can provide additional guardrails."
+
+That's a **strong 6-year-level answer**.
+
+---
+
+# 51. IAM Interview Questions You MUST Know
+
+### Basic
+
+1. What is IAM?
+2. Authentication vs Authorization?
+3. IAM User vs Role?
+4. User vs Group?
+5. What is IAM Policy?
+6. What is ARN?
+7. What is MFA?
+8. What are access keys?
+
+### Intermediate
+
+9. What is IAM Role?
+10. What is AssumeRole?
+11. What is STS?
+12. Trust policy vs permission policy?
+13. Identity-based vs resource-based policy?
+14. Managed vs inline policy?
+15. Explicit Deny vs Allow?
+16. What is least privilege?
+17. How do you give EC2 access to S3?
+
+### Advanced
+
+18. How does IAM policy evaluation work?
+19. Permission boundary kya hai?
+20. SCP kya hai?
+21. SCP vs IAM policy?
+22. Cross-account access kaise implement karoge?
+23. IAM Role vs Access Keys?
+24. AccessDenied troubleshoot kaise karoge?
+25. Application secret securely kaise store karoge?
+26. KMS vs Secrets Manager?
+27. IAM Identity Center kya hai?
+28. How do you prevent privilege escalation?
+29. How do you audit IAM activity?
+30. How do you design IAM for multiple AWS accounts?
+
+---
+
+# 52. Sabse important mental model
+
+AWS Security ko is tarah yaad rakho:
+
+```text
+                 AWS SECURITY
+                      |
+       +--------------+--------------+
+       |              |              |
+     IDENTITY       NETWORK         DATA
+       |              |              |
+      IAM             SG             KMS
+      Role           NACL         Encryption
+      Policy         WAF          Secrets
+      STS            Firewall
+       |
+    Access
+```
+
+Aur request ka flow:
+
+```text
+User/Application
+       |
+       ↓
+Authentication
+       |
+       ↓
+IAM Authorization
+       |
+       ↓
+Network Security
+       |
+       ↓
+Resource Policy
+       |
+       ↓
+Encryption/Key Permission
+       |
+       ↓
+AWS Resource
+```
+
+## 🔥 10 things jo pakka yaad karo
+
+```text
+1. IAM = Identity + Access
+2. Authentication = Who are you?
+3. Authorization = What can you do?
+4. Role = temporary/assumable access
+5. Trust Policy = who can assume role
+6. Permission Policy = what role can do
+7. Explicit Deny overrides Allow
+8. Least privilege = minimum required access
+9. SCP limits permissions; it doesn't grant them
+10. Production applications → Role, not hardcoded access keys
+```
+
+**Next logical topic:** **EC2 + Load Balancer + Auto Scaling**. Ye IAM + Networking ke saath combine karke **real production architecture aur troubleshooting** samajhne mein sabse zyada useful hoga.
+========================
+=================================
