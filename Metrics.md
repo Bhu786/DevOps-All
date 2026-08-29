@@ -1,188 +1,172 @@
-Bilkul. Tum basically pooch rahe ho: **1–10 metrics mein kaunsi value/problem kya indicate karti hai**. Interview/troubleshooting ke liye isko aise yaad karo.
+Bilkul. Main **same 1–10 list** ko 4 columns mein kar deta hoon:
 
-> **Note:** Exact thresholds system-dependent hote hain. Neeche practical **warning/signals** hain, fixed rules nahi.
+**Metric → High/Abnormal → Kya indicate karta hai → Problem ho to kya karein**
+
+> Thresholds system-dependent hain; ye practical interview-level signals hain.
 
 ### 1. API / Application Metrics
 
-| Metric          | Agar high/increase ho | Indicate                       |
-| --------------- | --------------------- | ------------------------------ |
-| Request rate    | अचानक ↑               | High traffic                   |
-| Response time   | ↑                     | API slow / bottleneck          |
-| P95/P99 latency | ↑                     | Kuch requests bahut slow       |
-| Error rate      | ↑                     | Application/dependency problem |
-| 5xx             | ↑                     | Server/application problem     |
-| 4xx             | ↑                     | Client/request problem         |
-| Throughput      | ↓                     | Processing bottleneck          |
-
-**Example:** Response time 200ms → 5 sec = **problem signal**.
+| Metric          | High / Abnormal | Indicate                | Short Resolution                  |
+| --------------- | --------------- | ----------------------- | --------------------------------- |
+| Request rate    | अचानक ↑         | High traffic            | **Scale / rate-limit**            |
+| Response time   | ↑               | API slow                | **Find bottleneck → optimize**    |
+| P95/P99 latency | ↑               | Some requests very slow | **Trace slow requests**           |
+| Error rate      | ↑               | App/dependency issue    | **Check logs + fix root cause**   |
+| 5xx             | ↑               | Server/app problem      | **Check logs/code/dependency**    |
+| 4xx             | ↑               | Client/request issue    | **Validate request/API contract** |
+| Throughput      | ↓               | Processing bottleneck   | **Optimize / scale**              |
 
 ---
 
 ### 2. JVM Metrics
 
-| Metric             | High/abnormal     | Indicate                       |
-| ------------------ | ----------------- | ------------------------------ |
-| Heap usage         | Continuously ↑    | Memory pressure/leak           |
-| Old Gen            | Continuously high | Objects not getting released   |
-| GC frequency       | ↑                 | Memory pressure                |
-| GC pause           | ↑                 | Application pauses/slow        |
-| Thread count       | ↑ continuously    | Thread leak/concurrency issue  |
-| Deadlocked threads | > 0               | **Deadlock**                   |
-| Non-heap           | High              | Class/metaspace issue possible |
-
-**Strong signal:** GC ke baad bhi heap continuously high → **memory leak suspect**.
+| Metric             | High / Abnormal   | Indicate              | Short Resolution              |
+| ------------------ | ----------------- | --------------------- | ----------------------------- |
+| Heap usage         | Continuously ↑    | Memory pressure/leak  | **Heap dump → fix leak**      |
+| Old Gen            | Continuously high | Objects retained      | **Find retained objects**     |
+| GC frequency       | ↑                 | Memory pressure       | **Tune heap/app allocation**  |
+| GC pause           | ↑                 | Application pauses    | **Analyze GC → tune JVM**     |
+| Thread count       | ↑ continuously    | Thread leak/overload  | **Check thread dump → fix**   |
+| Deadlocked threads | > 0               | Deadlock              | **Thread dump → fix locking** |
+| Non-heap           | High              | Metaspace/class issue | **Analyze classes/metaspace** |
 
 ---
 
 ### 3. Server / Container
 
-| Metric             | High/abnormal      | Indicate                          |
-| ------------------ | ------------------ | --------------------------------- |
-| CPU                | ~90–100% sustained | CPU bottleneck                    |
-| Memory             | ~90%+              | Memory pressure                   |
-| Disk usage         | ~90%+              | Disk full risk                    |
-| Disk I/O           | High               | I/O bottleneck                    |
-| Network            | Saturated          | Network bottleneck                |
-| File descriptors   | Near limit         | Connection/resource issue         |
-| Container restarts | ↑                  | Application/container instability |
-| OOMKilled          | Yes                | Memory limit exceeded             |
-| CPU throttling     | High               | Container CPU limit problem       |
+| Metric             | High / Abnormal    | Indicate            | Short Resolution                 |
+| ------------------ | ------------------ | ------------------- | -------------------------------- |
+| CPU                | ~90–100% sustained | CPU bottleneck      | **Optimize / scale**             |
+| Memory             | ~90%+              | Memory pressure     | **Find leak / increase limit**   |
+| Disk usage         | ~90%+              | Disk full risk      | **Clean / increase disk**        |
+| Disk I/O           | High               | I/O bottleneck      | **Optimize I/O / storage**       |
+| Network            | Saturated          | Network bottleneck  | **Increase capacity / optimize** |
+| File descriptors   | Near limit         | Resource exhaustion | **Close leaks / increase limit** |
+| Container restarts | ↑                  | App instability     | **Check logs/events**            |
+| OOMKilled          | Yes                | Memory exceeded     | **Fix memory / increase limit**  |
+| CPU throttling     | High               | CPU limit too low   | **Tune CPU limit**               |
 
 ---
 
 ### 4. Database
 
-| Metric         | High/abnormal | Indicate                        |
-| -------------- | ------------- | ------------------------------- |
-| DB CPU         | High          | DB CPU bottleneck               |
-| DB connections | Near max      | Connection pressure             |
-| Hikari active  | Near max      | Pool heavily used               |
-| Hikari pending | ↑             | Requests waiting for connection |
-| Hikari idle    | 0             | Pool fully occupied             |
-| Query latency  | ↑             | Slow DB/query                   |
-| Slow queries   | ↑             | Query/index problem             |
-| Locks          | ↑             | Blocking                        |
-| Deadlocks      | > 0           | Transaction conflict            |
-| DB errors      | ↑             | DB issue                        |
-
-**Example:**
-
-`Active=20, Max=20, Pending=50`
-
-→ **Connection pool exhausted.**
+| Metric         | High / Abnormal | Indicate               | Short Resolution                      |
+| -------------- | --------------- | ---------------------- | ------------------------------------- |
+| DB CPU         | High            | DB CPU bottleneck      | **Optimize queries / scale DB**       |
+| DB connections | Near max        | Connection pressure    | **Find long connections / tune pool** |
+| Hikari active  | Near max        | Pool heavily used      | **Find slow DB work / tune**          |
+| Hikari pending | ↑               | Waiting for connection | **Fix slow queries / pool carefully** |
+| Hikari idle    | 0               | Pool fully occupied    | **Investigate DB bottleneck**         |
+| Query latency  | ↑               | Slow query/DB          | **Optimize query / index**            |
+| Slow queries   | ↑               | Query problem          | **EXPLAIN + optimize**                |
+| Locks          | ↑               | Blocking               | **Find blocking transaction**         |
+| Deadlocks      | > 0             | Transaction conflict   | **Fix locking/order**                 |
+| DB errors      | ↑               | DB problem             | **Check DB/logs/config**              |
 
 ---
 
 ### 5. Downstream / Microservices
 
-| Metric               | High/abnormal | Indicate                    |
-| -------------------- | ------------- | --------------------------- |
-| Downstream latency   | ↑             | Service slow                |
-| Timeout              | ↑             | Service/network slow        |
-| Connection failure   | ↑             | Service/network unavailable |
-| 5xx                  | ↑             | Downstream service problem  |
-| Retry count          | ↑             | Dependency instability      |
-| Circuit breaker OPEN | Yes           | Dependency unhealthy        |
-
-**Example:**
-
-`Service A = 100ms`
-`Service B = 8 sec`
-
-→ **Service B likely bottleneck.**
+| Metric               | High / Abnormal | Indicate             | Short Resolution                  |
+| -------------------- | --------------- | -------------------- | --------------------------------- |
+| Downstream latency   | ↑               | Service slow         | **Trace + optimize dependency**   |
+| Timeout              | ↑               | Service/network slow | **Timeout + circuit breaker**     |
+| Connection failure   | ↑               | Service unavailable  | **Check network/service health**  |
+| 5xx                  | ↑               | Downstream failure   | **Check downstream logs**         |
+| Retry count          | ↑               | Dependency unstable  | **Limit retry + backoff**         |
+| Circuit breaker OPEN | Yes             | Dependency unhealthy | **Fallback / recover dependency** |
 
 ---
 
 ### 6. Kafka
 
-| Metric                      | High/abnormal   | Indicate                   |
-| --------------------------- | --------------- | -------------------------- |
-| Consumer lag                | ↑ continuously  | Consumer can't keep up     |
-| Producer rate               | > Consumer rate | Lag will increase          |
-| Consumer processing time    | ↑               | Consumer slow              |
-| Rebalances                  | ↑               | Consumer-group instability |
-| Consumer errors             | ↑               | Processing problem         |
-| Commit latency              | ↑               | Commit/broker issue        |
-| Under-replicated partitions | > 0             | Replica/broker problem     |
-
-**Most important:** **Consumer Lag continuously increasing = problem.**
+| Metric                        | High / Abnormal | Indicate             | Short Resolution                  |
+| ----------------------------- | --------------- | -------------------- | --------------------------------- |
+| Consumer lag                  | ↑ continuously  | Consumer too slow    | **Optimize / scale consumers**    |
+| Producer rate > consumer rate | Yes             | Lag increasing       | **Increase processing capacity**  |
+| Processing time               | ↑               | Consumer slow        | **Optimize consumer**             |
+| Rebalances                    | ↑               | Consumer instability | **Check consumer/session config** |
+| Consumer errors               | ↑               | Processing failure   | **Check logs/code**               |
+| Commit latency                | ↑               | Commit/broker issue  | **Check broker/network**          |
+| Under-replicated partitions   | > 0             | Replica/broker issue | **Check broker health**           |
 
 ---
 
 ### 7. Kubernetes
 
-| Metric         | High/abnormal | Indicate                       |
-| -------------- | ------------- | ------------------------------ |
-| Pod CPU        | High          | CPU pressure                   |
-| Pod memory     | High          | Memory pressure                |
-| Pod restarts   | ↑             | Pod instability                |
-| OOMKilled      | Yes           | Memory exceeded                |
-| CPU throttling | High          | CPU limit too low              |
-| Pending pods   | ↑             | Scheduling/resource problem    |
-| Failed pods    | ↑             | Deployment/application problem |
-| Ready replicas | < desired     | Availability problem           |
-| Node CPU       | High          | Node resource pressure         |
-| Node memory    | High          | Node memory pressure           |
+| Metric         | High / Abnormal | Indicate                  | Short Resolution                |
+| -------------- | --------------- | ------------------------- | ------------------------------- |
+| Pod CPU        | High            | CPU pressure              | **Increase resources / scale**  |
+| Pod memory     | High            | Memory pressure           | **Fix leak / increase memory**  |
+| Pod restarts   | ↑               | Pod instability           | **Check logs/events**           |
+| OOMKilled      | Yes             | Memory limit exceeded     | **Fix memory / increase limit** |
+| CPU throttling | High            | CPU limit low             | **Increase/tune CPU limit**     |
+| Pending pods   | ↑               | Scheduling/resource issue | **Check node capacity**         |
+| Failed pods    | ↑               | App/deployment issue      | **Check events/logs**           |
+| Ready replicas | < desired       | Availability problem      | **Fix pods / scale**            |
+| Node CPU       | High            | Node pressure             | **Scale/add nodes**             |
+| Node memory    | High            | Node pressure             | **Scale/add nodes**             |
 
 ---
 
 ### 8. Network
 
-| Metric            | High/abnormal    | Indicate                |
-| ----------------- | ---------------- | ----------------------- |
-| Latency           | ↑                | Network/service delay   |
-| Packet loss       | > 0 / increasing | Network problem         |
-| Throughput        | Saturated        | Bandwidth bottleneck    |
-| Connection errors | ↑                | Connectivity issue      |
-| DNS latency       | ↑                | DNS problem             |
-| DNS failures      | ↑                | Service discovery issue |
+| Metric            | High / Abnormal | Indicate                | Short Resolution                 |
+| ----------------- | --------------- | ----------------------- | -------------------------------- |
+| Latency           | ↑               | Network delay           | **Check network path**           |
+| Packet loss       | ↑               | Network problem         | **Check network/infrastructure** |
+| Throughput        | Saturated       | Bandwidth bottleneck    | **Increase capacity**            |
+| Connection errors | ↑               | Connectivity issue      | **Check DNS/firewall/service**   |
+| DNS latency       | ↑               | DNS problem             | **Check DNS**                    |
+| DNS failures      | ↑               | Service discovery issue | **Fix DNS/config**               |
 
 ---
 
 ### 9. Infrastructure
 
-| Metric            | High/abnormal | Indicate               |
-| ----------------- | ------------- | ---------------------- |
-| Disk usage        | ~90%+         | Disk full risk         |
-| Disk latency      | ↑             | Storage slow           |
-| IOPS              | Near limit    | Storage bottleneck     |
-| Network bandwidth | Near limit    | Network saturation     |
-| Load balancer 5xx | ↑             | Backend/LB problem     |
-| LB latency        | ↑             | Backend/network issue  |
-| Instance health   | Unhealthy     | Infrastructure problem |
+| Metric            | High / Abnormal | Indicate             | Short Resolution             |
+| ----------------- | --------------- | -------------------- | ---------------------------- |
+| Disk usage        | ~90%+           | Disk full risk       | **Clean/increase disk**      |
+| Disk latency      | ↑               | Storage slow         | **Optimize/upgrade storage** |
+| IOPS              | Near limit      | Storage bottleneck   | **Increase IOPS/optimize**   |
+| Network bandwidth | Near limit      | Network saturation   | **Increase capacity**        |
+| LB 5xx            | ↑               | Backend/LB problem   | **Check backend/LB**         |
+| LB latency        | ↑               | Backend/network slow | **Trace backend**            |
+| Instance health   | Unhealthy       | Infrastructure issue | **Replace/recover instance** |
 
 ---
 
 ### 10. Security
 
-| Metric              | High/abnormal | Indicate                        |
-| ------------------- | ------------- | ------------------------------- |
-| Login failures      | अचानक ↑       | Brute-force/suspicious activity |
-| 401                 | ↑             | Authentication issue            |
-| 403                 | ↑             | Authorization/access issue      |
-| Rate-limit hits     | ↑             | Excessive traffic/client issue  |
-| Suspicious requests | ↑             | Possible attack                 |
-| Certificate expiry  | Near expiry   | TLS outage risk                 |
+| Metric              | High / Abnormal | Indicate             | Short Resolution                 |
+| ------------------- | --------------- | -------------------- | -------------------------------- |
+| Login failures      | Suddenly ↑      | Suspicious activity  | **Rate-limit/block/investigate** |
+| 401                 | ↑               | Authentication issue | **Check token/auth**             |
+| 403                 | ↑               | Authorization issue  | **Check permissions**            |
+| Rate-limit hits     | ↑               | Excessive traffic    | **Rate-limit/block client**      |
+| Suspicious requests | ↑               | Possible attack      | **Investigate/WAF rules**        |
+| Certificate expiry  | Near expiry     | TLS outage risk      | **Renew certificate**            |
 
----
+### 🔥 Interview ke liye ultimate shortcut
 
-## 🔥 Sabse important shortcut
+**Metric ↑ → Problem suspect → Logs/Trace se confirm → Root cause → Fix**
 
-Agar **API slow** hai, dashboard mein pehle ye dekho:
+Example:
 
-**1. Latency ↑** → API slow
-**2. Error ↑** → failures
-**3. CPU ↑** → CPU problem
-**4. Memory ↑** → memory problem
-**5. GC ↑** → JVM/memory problem
-**6. Threads ↑** → thread bottleneck
-**7. DB Pool Pending ↑** → DB connections problem
-**8. DB Query Latency ↑** → DB problem
-**9. Downstream Latency ↑** → another service problem
-**10. Kafka Lag ↑** → consumer problem
+**Hikari pending ↑**
+→ DB connections unavailable
+→ logs/query metrics check
+→ slow query found
+→ **query/index optimize** ✅
 
-### Ek golden rule:
+**Consumer lag ↑**
+→ consumer slow
+→ processing time/logs check
+→ slow DB call found
+→ **optimize DB / scale consumer** ✅
 
-**Metric abnormal hai → suspect problem → logs/traces se confirm → root cause fix.**
-
-Metrics ko **“proof” nahi**, pehle **“signal”** samjho.
+**CPU ↑**
+→ CPU bottleneck suspect
+→ thread/profile check
+→ expensive code found
+→ **optimize code / scale** ✅
