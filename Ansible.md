@@ -1,3 +1,72 @@
+ANSIBLE
+│
+├── Open-source automation tool
+│
+├── Used for
+│   ├── Configuration Management
+│   ├── Application Deployment
+│   └── Task Automation
+│
+├── Agentless
+│   ├── Linux/Unix → SSH
+│   └── Windows → WinRM
+│
+├── Components
+│   ├── Control Node
+│   ├── Managed Nodes
+│   ├── Inventory
+│   ├── Playbook
+│   ├── Modules
+│   └── Roles
+│
+├── Inventory
+│   └── Servers/hosts ki list
+│       ├── Static
+│       └── Dynamic
+│
+├── Playbook
+│   └── YAML file
+│       └── Defines tasks
+│
+├── Play
+│   └── What to do + where to do
+│
+├── Tasks
+│   └── Individual work
+│
+├── Modules
+│   └── Actual work perform karte hain
+│       ├── yum
+│       ├── copy
+│       └── service
+│
+├── Roles
+│   └── Reusable organization
+│       ├── tasks
+│       ├── templates
+│       ├── files
+│       └── variables
+│
+├── Workflow
+│   ├── Connect
+│   ├── Execute
+│   └── Return result
+│
+├── Use Cases
+│   ├── System Configuration
+│   ├── Application Deployment
+│   ├── Cloud Provisioning
+│   ├── Patch Management
+│   └── IaC
+│
+└── Benefits
+    ├── Automation
+    ├── Consistency
+    ├── Scalability
+    ├── Less human error
+    └── Easy YAML syntax
+    ==================================
+
 Ansible; configuration as tool hai 
 
 ak master node bnate hia  ya bole ak server isse par ansible install kar dete hia 
