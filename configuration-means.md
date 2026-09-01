@@ -175,6 +175,71 @@ Configuration → Application
 **Configuration = settings**, बस तीनों tools उन settings को **अलग तरीके से रखते/manage करते हैं**।
 
 =========================
+**Bilkul. यही बात है — लेकिन एक छोटा distinction याद रखो।**
+
+जब हम कहते हैं:
+
+> **Ansible is a Configuration Management tool**
+
+तो इसका मतलब है कि Ansible **servers/systems की configuration को centrally manage और maintain** कर सकता है।
+
+### Example
+
+मान लो 100 servers हैं:
+
+```text
+Server 1  ─┐
+Server 2  ─┤
+Server 3  ─┤
+...        ├──→ Ansible
+Server 100 ┘
+```
+
+तुम चाहते हो हर server पर:
+
+```text
+Java = 17
+Nginx = installed
+User = deploy
+Config file = particular setting
+Service = running
+```
+
+Ansible Playbook में ये desired configuration/tasks define करोगे:
+
+```text
+Ansible
+   ↓
+Playbook
+   ↓
+Tasks / Modules
+   ↓
+100 Servers
+   ↓
+Same required configuration
+```
+
+यही **Configuration Management** है।
+
+### 🔥 लेकिन “configuration” और “Configuration Management” अलग हैं
+
+```text
+Configuration
+= Settings क्या हैं?
+
+Configuration Management
+= उन settings को
+  manage + apply + maintain करना
+```
+
+इसलिए:
+
+> **Ansible को Configuration Management tool कहते हैं क्योंकि यह servers की configuration को automate करके desired state में maintain कर सकता है।**
+
+और इसी वजह से **Helm को भी Configuration Management बोल सकते हैं?**
+Broad sense में configuration manage करता है, **लेकिन उसका primary identity Kubernetes package manager है**, जबकि Ansible की primary identity **configuration management + automation** है।
+
+============================
 
 
 
