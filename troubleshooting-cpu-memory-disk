@@ -1,0 +1,1319 @@
+
+Bilkul. Isko **interview + real production troubleshooting** ke perspective se samjho. Tumhe commands ratne ki zarurat nahi; ek **fixed troubleshooting flow** yaad karo.
+
+# 🚨 CPU + Memory + Disk Troubleshooting — Master Flow
+
+Sabse pehle ye golden flow yaad rakho:
+
+```text
+PROBLEM
+   ↓
+1. Check overall health
+   ↓
+2. Identify which resource is bottleneck
+   ↓
+   ├── CPU high?
+   │     ↓
+   │   Find process → Find why → Fix
+   │
+   ├── Memory high?
+   │     ↓
+   │   Find process → Check RAM/SWAP → Find why → Fix
+   │
+   └── Disk high?
+         ↓
+       Space? OR I/O?
+         ↓
+       Find filesystem/process → Find why → Fix
+```
+
+---
+
+# 1️⃣ First: Server ki overall health check
+
+SSH into server:
+
+```bash
+ssh user@server
+```
+
+Then:
+
+```bash
+top
+```
+
+or better:
+
+```bash
+htop
+```
+
+### `top` mein kya dekhna hai?
+
+```text
+load average
+CPU
+memory
+swap
+processes
+```
+
+Quick commands:
+
+```bash
+uptime
+free -h
+df -h
+```
+
+So initial check:
+
+```bash
+uptime
+free -h
+df -h
+```
+
+### Mental model
+
+```text
+uptime → CPU/load ka idea
+free   → RAM ka idea
+df     → Disk space ka idea
+top    → kaunsa process problem create kar raha hai
+```
+
+---
+
+# 2️⃣ 🔥 CPU HIGH
+
+Suppose application slow hai.
+
+You check:
+
+```bash
+top
+```
+
+and see:
+
+```text
+CPU = 95%
+```
+
+Ab question:
+
+> **CPU kaun consume kar raha hai?**
+
+```bash
+top
+```
+
+Inside `top`, processes CPU usage ke according dekho.
+
+Or:
+
+```bash
+ps aux --sort=-%cpu | head
+```
+
+Example:
+
+```text
+java    95%
+nginx    2%
+sshd     1%
+```
+
+Now pata chala:
+
+> Java process CPU kha raha hai.
+
+---
+
+## CPU troubleshooting flow
+
+```text
+CPU HIGH
+   ↓
+top
+   ↓
+Which process?
+   ↓
+ps aux --sort=-%cpu
+   ↓
+Is it Java?
+   ↓
+Check threads
+   ↓
+Check logs
+   ↓
+Check application behavior
+   ↓
+Fix / restart / optimize / scale
+```
+
+### Java application mein
+
+Java process identify:
+
+```bash
+ps -ef | grep java
+```
+
+PID mil gaya:
+
+```text
+PID = 1234
+```
+
+Threads check:
+
+```bash
+top -H -p 1234
+```
+
+Ye bahut important hai.
+
+Because:
+
+```text
+Java Process
+    ↓
+Many Threads
+    ↓
+One/few threads may consume CPU
+```
+
+Thread dump:
+
+```bash
+jstack 1234
+```
+
+Or modern JDK:
+
+```bash
+jcmd 1234 Thread.print
+```
+
+### Tum kya search karoge?
+
+High CPU thread → thread dump → stack trace → application code.
+
+Possible reasons:
+
+```text
+infinite loop
+heavy computation
+bad algorithm
+too many requests
+excessive GC
+thread contention
+DB query causing application work
+```
+
+---
+
+# 3️⃣ Java + CPU Example
+
+Suppose Spring Boot application:
+
+```text
+CPU = 99%
+```
+
+You run:
+
+```bash
+top
+```
+
+Java PID:
+
+```text
+1234
+```
+
+Then:
+
+```bash
+top -H -p 1234
+```
+
+You find:
+
+```text
+Thread ID = 5678
+CPU = 90%
+```
+
+Then thread dump:
+
+```bash
+jstack 1234
+```
+
+Now you investigate what thread `5678` is doing.
+
+So actual troubleshooting becomes:
+
+```text
+Server
+ ↓
+Java process
+ ↓
+Java thread
+ ↓
+Thread dump
+ ↓
+Code/method
+ ↓
+Root cause
+```
+
+**This is much better than simply saying "CPU high hai, Java restart kar diya."**
+
+---
+
+# 4️⃣ 🧠 MEMORY / RAM HIGH
+
+Suppose:
+
+```bash
+free -h
+```
+
+shows:
+
+```text
+RAM = 16 GB
+used = 15 GB
+```
+
+Don't immediately conclude:
+
+> "Application memory leak hai."
+
+First understand RAM + cache + swap.
+
+Check:
+
+```bash
+free -h
+```
+
+Then:
+
+```bash
+top
+```
+
+Find which process consumes RAM:
+
+```bash
+ps aux --sort=-%mem | head
+```
+
+Example:
+
+```text
+java    12GB
+mysql    2GB
+nginx   200MB
+```
+
+Now Java is the main consumer.
+
+---
+
+# 5️⃣ Java Memory Troubleshooting
+
+Java application mein important concept:
+
+```text
+OS RAM
+   ↓
+Java Process
+   ↓
+JVM
+   ↓
+Heap
+   ↓
+Objects
+```
+
+Check Java process:
+
+```bash
+ps aux --sort=-%mem | head
+```
+
+Check JVM configuration:
+
+```bash
+jcmd <PID> VM.flags
+```
+
+Heap information:
+
+```bash
+jcmd <PID> GC.heap_info
+```
+
+Heap dump:
+
+```bash
+jmap -dump:live,format=b,file=heap.hprof <PID>
+```
+
+Then analyze `heap.hprof` using tools such as Eclipse MAT.
+
+---
+
+# 6️⃣ Memory problem ke common reasons
+
+Java/Spring Boot application mein:
+
+```text
+Memory High
+    ↓
+Too many objects
+    ↓
+Large collections
+    ↓
+Cache growing
+    ↓
+Memory leak
+    ↓
+Large heap
+    ↓
+Too many requests
+```
+
+Another important thing:
+
+### JVM Heap ≠ Entire RAM
+
+For example:
+
+```text
+Server RAM = 16 GB
+
+JVM Heap = 8 GB
+```
+
+Doesn't mean Java can only consume 8 GB.
+
+Java process can also use:
+
+```text
+Heap
++ Metaspace
++ Threads
++ Native memory
++ Direct buffers
++ JVM overhead
+```
+
+So:
+
+```text
+OS RAM
+   ↓
+Java process
+   ├── Heap
+   ├── Metaspace
+   ├── Threads
+   └── Native memory
+```
+
+---
+
+# 7️⃣ 🚨 SWAP
+
+Check:
+
+```bash
+free -h
+```
+
+Example:
+
+```text
+Swap:
+total 4G
+used 3.5G
+```
+
+Heavy swap usage can make application **very slow** because disk is being used as memory.
+
+Check:
+
+```bash
+swapon --show
+```
+
+You can also inspect:
+
+```bash
+vmstat 1
+```
+
+Important concept:
+
+```text
+RAM full
+ ↓
+Kernel may use SWAP
+ ↓
+Disk I/O increases
+ ↓
+Application becomes slow
+```
+
+So **high disk I/O can actually be a symptom of memory pressure.**
+
+---
+
+# 8️⃣ 💾 DISK — But first ask: "Which disk problem?"
+
+This is extremely important.
+
+When someone says:
+
+> "Disk problem hai."
+
+There are actually **two different problems**:
+
+```text
+              DISK
+                |
+       ┌────────┴────────┐
+       ↓                 ↓
+  Disk SPACE          Disk I/O
+       ↓                 ↓
+  95% full          Slow read/write
+```
+
+---
+
+# 9️⃣ Disk SPACE HIGH
+
+First:
+
+```bash
+df -h
+```
+
+Example:
+
+```text
+/dev/sda1    100G    95G    5G    95% /
+```
+
+Now:
+
+> Root filesystem is 95% full.
+
+Next question:
+
+> **What is consuming the space?**
+
+```bash
+du -sh /*
+```
+
+Better:
+
+```bash
+du -sh /var/*
+```
+
+Then:
+
+```bash
+du -sh /var/log/*
+```
+
+Maybe:
+
+```text
+/var/log = 60G
+```
+
+Now investigate logs.
+
+---
+
+# 🔟 Find large files
+
+```bash
+find / -type f -size +1G 2>/dev/null
+```
+
+Or:
+
+```bash
+du -ah /var | sort -rh | head
+```
+
+Common culprits:
+
+```text
+application logs
+Docker images
+Docker containers
+old backups
+temporary files
+core dumps
+large heap dumps
+```
+
+---
+
+# 1️⃣1️⃣ Java application + Disk
+
+Very common production scenario:
+
+```text
+Spring Boot
+    ↓
+logs
+    ↓
+application.log
+    ↓
+10 GB
+    ↓
+Disk 100%
+    ↓
+Application problems
+```
+
+Check:
+
+```bash
+du -sh /var/log/*
+```
+
+Check application logs:
+
+```bash
+ls -lh
+```
+
+Use:
+
+```bash
+tail -f application.log
+```
+
+Search errors:
+
+```bash
+grep -i "error" application.log
+```
+
+or:
+
+```bash
+grep -i "exception" application.log
+```
+
+### Important
+
+Don't randomly:
+
+```bash
+rm -rf /var/log/*
+```
+
+in production.
+
+First understand **log rotation, retention and which process owns the file**.
+
+---
+
+# 1️⃣2️⃣ Disk I/O HIGH
+
+Suppose:
+
+```bash
+df -h
+```
+
+shows only:
+
+```text
+40% used
+```
+
+But application is extremely slow.
+
+Then disk **space isn't the problem**.
+
+Could be:
+
+> Disk I/O bottleneck.
+
+Check:
+
+```bash
+iostat
+```
+
+If available:
+
+```bash
+iostat -xz 1
+```
+
+Also:
+
+```bash
+iotop
+```
+
+This helps identify processes doing heavy disk I/O.
+
+Another useful command:
+
+```bash
+vmstat 1
+```
+
+Mental model:
+
+```text
+Disk space ≠ Disk performance
+```
+
+---
+
+# 1️⃣3️⃣ Network bhi troubleshooting mein important hai
+
+Although your main focus is CPU/RAM/Disk, full-stack DevOps troubleshooting mein network ko ignore nahi karna.
+
+Basic commands:
+
+```bash
+ping
+curl
+ss
+netstat
+nslookup
+dig
+```
+
+Example:
+
+```bash
+curl http://localhost:8080
+```
+
+Check Spring Boot endpoint:
+
+```bash
+curl http://localhost:8080/actuator/health
+```
+
+Port check:
+
+```bash
+ss -lntp
+```
+
+You can understand:
+
+```text
+Application running?
+Port listening?
+Network reachable?
+HTTP response coming?
+```
+
+---
+
+# 1️⃣4️⃣ Process Troubleshooting
+
+These commands **must know**:
+
+### List processes
+
+```bash
+ps aux
+```
+
+### Find Java
+
+```bash
+ps -ef | grep java
+```
+
+### CPU-wise
+
+```bash
+ps aux --sort=-%cpu | head
+```
+
+### Memory-wise
+
+```bash
+ps aux --sort=-%mem | head
+```
+
+### Process details
+
+```bash
+ps -p <PID> -f
+```
+
+### Kill
+
+```bash
+kill <PID>
+```
+
+Force kill only when appropriate:
+
+```bash
+kill -9 <PID>
+```
+
+### Why not directly kill -9?
+
+Because graceful shutdown may not happen.
+
+Preferred:
+
+```text
+kill
+ ↓
+application gets termination signal
+ ↓
+cleanup
+ ↓
+shutdown
+```
+
+---
+
+# 1️⃣5️⃣ Logs — Most Important Troubleshooting Tool
+
+For Java:
+
+```bash
+tail -f application.log
+```
+
+Last 100 lines:
+
+```bash
+tail -100 application.log
+```
+
+Search:
+
+```bash
+grep -i error application.log
+```
+
+Multiple patterns:
+
+```bash
+grep -Ei "error|exception|failed" application.log
+```
+
+System logs:
+
+```bash
+journalctl
+```
+
+Service-specific:
+
+```bash
+journalctl -u <service-name>
+```
+
+For Spring Boot service:
+
+```bash
+journalctl -u myapp
+```
+
+---
+
+# 1️⃣6️⃣ systemctl
+
+If Java application is running as Linux service:
+
+```bash
+systemctl status myapp
+```
+
+Restart:
+
+```bash
+systemctl restart myapp
+```
+
+Check logs:
+
+```bash
+journalctl -u myapp
+```
+
+Flow:
+
+```text
+Application down
+     ↓
+systemctl status
+     ↓
+Why failed?
+     ↓
+journalctl
+     ↓
+Check port
+     ↓
+Check logs
+     ↓
+Fix
+     ↓
+Restart
+```
+
+---
+
+# 1️⃣7️⃣ Docker troubleshooting
+
+If your Spring Boot application runs inside Docker:
+
+```bash
+docker ps
+```
+
+Check resource usage:
+
+```bash
+docker stats
+```
+
+Logs:
+
+```bash
+docker logs <container>
+```
+
+Follow logs:
+
+```bash
+docker logs -f <container>
+```
+
+Inspect:
+
+```bash
+docker inspect <container>
+```
+
+Disk:
+
+```bash
+docker system df
+```
+
+So:
+
+```text
+Docker application
+      ↓
+docker stats
+      ↓
+CPU?
+Memory?
+      ↓
+docker logs
+      ↓
+Error?
+```
+
+---
+
+# 1️⃣8️⃣ Kubernetes troubleshooting
+
+If your Java application runs in Kubernetes, this becomes very important.
+
+First:
+
+```bash
+kubectl get pods
+```
+
+Then:
+
+```bash
+kubectl describe pod <pod>
+```
+
+Logs:
+
+```bash
+kubectl logs <pod>
+```
+
+Previous crashed container:
+
+```bash
+kubectl logs <pod> --previous
+```
+
+Resource usage:
+
+```bash
+kubectl top pod
+```
+
+Node:
+
+```bash
+kubectl top node
+```
+
+Events:
+
+```bash
+kubectl get events
+```
+
+---
+
+# 🔥 Kubernetes CPU/MEMORY troubleshooting
+
+Suppose:
+
+```text
+Pod restarting
+```
+
+First:
+
+```bash
+kubectl get pods
+```
+
+You see:
+
+```text
+CrashLoopBackOff
+```
+
+Then:
+
+```bash
+kubectl describe pod <pod>
+```
+
+Look at:
+
+```text
+Events
+Last State
+Reason
+Exit Code
+```
+
+Logs:
+
+```bash
+kubectl logs <pod> --previous
+```
+
+If:
+
+```text
+OOMKilled
+```
+
+then:
+
+> Container exceeded its memory limit.
+
+Check:
+
+```yaml
+resources:
+  requests:
+    memory: "512Mi"
+  limits:
+    memory: "1Gi"
+```
+
+Concept:
+
+```text
+Java Application
+      ↓
+Container
+      ↓
+Memory limit = 1 GB
+      ↓
+Application exceeds limit
+      ↓
+OOMKilled
+```
+
+---
+
+# 1️⃣9️⃣ CPU Limit Problem in Kubernetes
+
+Suppose Java pod CPU high.
+
+```bash
+kubectl top pod
+```
+
+You see:
+
+```text
+my-java-app    950m
+```
+
+Check:
+
+```bash
+kubectl describe pod <pod>
+```
+
+and deployment:
+
+```bash
+kubectl get deployment <deployment> -o yaml
+```
+
+Maybe:
+
+```yaml
+resources:
+  limits:
+    cpu: "1"
+```
+
+Application needs more CPU than allocated.
+
+Possible solutions depend on root cause:
+
+```text
+Optimize code
+    OR
+Increase CPU
+    OR
+Scale replicas
+    OR
+Investigate traffic
+```
+
+---
+
+# 2️⃣0️⃣ Complete Real-World Java Troubleshooting
+
+Imagine interviewer says:
+
+> **"Production Spring Boot application is very slow. How will you troubleshoot?"**
+
+Don't start randomly giving commands.
+
+Answer this way:
+
+```text
+1. Check application health
+       ↓
+2. Check CPU
+       ↓
+3. Check memory
+       ↓
+4. Check disk space
+       ↓
+5. Check disk I/O
+       ↓
+6. Check network
+       ↓
+7. Check application logs
+       ↓
+8. Identify problematic process
+       ↓
+9. If Java → inspect JVM
+       ↓
+10. Check thread dump / heap / GC
+       ↓
+11. Check DB/API dependencies
+       ↓
+12. Find root cause
+       ↓
+13. Fix
+       ↓
+14. Verify
+       ↓
+15. Monitor
+```
+
+---
+
+# 🧠 Your MASTER COMMAND MAP
+
+Isko interview ke liye yaad karo:
+
+```text
+                    TROUBLESHOOTING
+                           │
+       ┌───────────────────┼───────────────────┐
+       ↓                   ↓                   ↓
+      CPU                MEMORY              DISK
+       │                   │                   │
+      top                free -h             df -h
+      ps                  top                 du
+      top -H             ps                  find
+       │                   │                   │
+       ↓                   ↓                   ↓
+    Process             Process          SPACE or I/O?
+       │                   │                   │
+       ↓                   ↓              ┌────┴────┐
+    Java?                Java?            ↓         ↓
+       │                   │             Space      I/O
+       ↓                   ↓               │         │
+ jstack/jcmd         heap/GC/JVM          du       iostat
+       │                   │               │         │
+       └───────────────┬───┴───────────────┘         │
+                       ↓                             ↓
+                     LOGS                         iotop
+                       │
+                 journalctl
+                 tail
+                 grep
+                       │
+                       ↓
+                  ROOT CAUSE
+                       ↓
+                     FIX
+                       ↓
+                   VERIFY
+```
+
+---
+
+# 🎯 DevOps + Java Full Stack ke liye "Must Know" Commands
+
+### 🖥️ Linux
+
+```bash
+top
+htop
+ps
+free
+df
+du
+find
+vmstat
+iostat
+iotop
+uptime
+kill
+systemctl
+journalctl
+```
+
+### ☕ Java/JVM
+
+```bash
+jps
+jstack
+jcmd
+jmap
+```
+
+### 🌐 Network
+
+```bash
+curl
+ping
+ss
+netstat
+nslookup
+dig
+```
+
+### 🐳 Docker
+
+```bash
+docker ps
+docker stats
+docker logs
+docker inspect
+docker system df
+```
+
+### ☸️ Kubernetes
+
+```bash
+kubectl get pods
+kubectl describe pod
+kubectl logs
+kubectl logs --previous
+kubectl top pod
+kubectl top node
+kubectl get events
+```
+
+---
+
+# ⭐ Sabse important interview trick
+
+Agar interviewer koi bhi problem de:
+
+> **"Application slow hai."**
+
+Immediately ye mat bolo:
+
+> `restart karunga`
+
+Instead:
+
+### **Observe → Identify → Investigate → Fix → Verify**
+
+```text
+Observe
+  ↓
+What is abnormal?
+  ↓
+Identify
+  ↓
+CPU / Memory / Disk / Network / Application?
+  ↓
+Investigate
+  ↓
+Which process / thread / log / dependency?
+  ↓
+Fix
+  ↓
+Verify
+  ↓
+Monitor
+```
+
+**Yahi actual troubleshooting mindset hai.**
+
+Aur ek very important distinction:
+
+```text
+CPU high     → processing problem
+Memory high  → RAM/JVM/process problem
+Disk full    → storage capacity problem
+Disk I/O high→ read/write performance problem
+Network high → connectivity/traffic problem
+Application  → code/JVM/dependency problem
+```
+
+Agar tum **Linux → Java → Docker → Kubernetes** ko isi single troubleshooting chain mein samajh loge, to production troubleshooting ke bahut saare questions automatically connect ho jayenge.
+
