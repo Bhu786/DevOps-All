@@ -554,35 +554,461 @@ That's the **end-to-end DevSecOps mindset**:
 **Prevent → Detect → Block → Deploy → Monitor → Respond → Improve.**
 
 20. What are the major phases of a DevSecOps pipeline?
-21. What security checks would you perform before code is merged?
-22. What security checks would you perform before production deployment?
-23. What security checks would you perform after deployment?
-24. How do you integrate security without slowing down developers?
-25. How do you implement security as code?
-26. What is Security as Code?
-27. What is Policy as Code?
-28. What is the difference between Security as Code and Policy as Code?
-29. How do you make security part of the developer workflow?
-30. How do you implement DevSecOps in an organization that currently has no security automation?
-31. How would you migrate a traditional DevOps pipeline to DevSecOps?
-32. What are the biggest challenges when implementing DevSecOps?
-33. What are the common DevSecOps anti-patterns?
-34. How do you measure DevSecOps maturity?
-35. What DevSecOps metrics would you track?
-36. What is the difference between vulnerability prevention and vulnerability detection?
-37. How do you prioritize security findings?
-38. How do you decide which vulnerabilities should fail a pipeline?
-39. What is risk-based security?
-40. How do you balance security, delivery speed, and business requirements?
-41. How do you handle developers who consider security scans a blocker?
-42. How do you reduce security false positives?
-43. How do you prevent security tools from becoming “checkbox security”?
-44. How do you implement DevSecOps across hundreds of repositories?
-45. How would you standardize security controls across multiple teams?
-46. How would you implement DevSecOps for microservices?
-47. How would you implement DevSecOps for a monolithic application?
-48. How would you implement DevSecOps for serverless applications?
-49. How would you implement DevSecOps in a multi-cloud environment?
+    same above 
+22. What security checks would you perform before code is merged?
+   ==> name above all before merger
+    Developer
+   ↓
+Pull Request
+   ↓
+┌─────────────────────────┐
+│ 🔐 Secret Scan          │
+│ 🔐 SAST                 │
+│ 🔐 SCA / Dependencies   │
+│ 🔐 IaC Scan             │
+│ 🔐 Code Review          │
+│ 🧪 Unit / Security Test │
+└─────────────────────────┘
+   ↓
+Security Gate
+   ↓
+PASS → Merge ✅
+FAIL → Block ❌
+24. What security checks would you perform before production deployment?
+    Staging
+   ↓
+┌──────────────────────────────┐
+│ 1. Vulnerability Scan        │
+│ 2. Container/Image Scan      │
+│ 3. DAST / API Security       │
+│ 4. IaC & Kubernetes Scan     │
+│ 5. Secrets Check             │
+│ 6. Configuration Check       │
+│ 7. IAM/RBAC Check            │
+│ 8. Compliance / Policy Check │
+│ 9. Artifact Verification     │
+└──────────────────────────────┘
+   ↓
+ Security Gate 🚦
+   ↓
+PASS → Production ✅
+FAIL → Deployment Blocked ❌
+26. What security checks would you perform after deployment?
+                     Production
+                     ↓
+        ┌─────────────────────────┐
+        │ 🔐 Runtime Security     │
+        │ 🔐 Vulnerability Scan   │
+        │ 🔐 WAF                 │
+        │ 🔐 Logs / SIEM         │
+        │ 🔐 Threat Detection    │
+        │ 🔐 Access Monitoring   │
+        │ 🔐 Configuration Drift │
+        │ 🔐 Incident Response   │
+        └─────────────────────────┘
+                     ↓
+              Alert / Respond
+28. How do you integrate security without slowing down developers?
+ "Don't make security a separate step that slows development; make security an automated part of development."
+30. How do you implement security as code?
+    **Security as Code** ka simple meaning hai:
+
+> **Security rules aur security policies ko code/configuration ki tarah define karke automatically enforce karna.**
+
+Matlab security team manually check nahi karegi ki infrastructure/application secure hai ya nahi. **Pipeline automatically check karegi.**
+
+### Simple example
+
+Suppose company ka rule hai:
+
+> Production security group mein `0.0.0.0/0` se SSH (port 22) allowed nahi hona chahiye.
+
+Traditional:
+
+```text
+Terraform
+   ↓
+Deploy
+   ↓
+Security Team manually checks
+   ↓
+❌ Problem found
+```
+
+Security as Code:
+
+```text
+Terraform
+   ↓
+Security Policy
+   ↓
+Automated Scan
+   ↓
+❌ Policy violation
+   ↓
+Pipeline BLOCKED
+```
+
+---
+
+## Security as Code implement kaise karenge?
+
+### 1. Security rules define karo
+
+Example policy:
+
+```text
+Rule:
+Production SSH must not be publicly accessible.
+```
+
+Ya:
+
+```text
+Rule:
+S3 bucket must not be public.
+```
+
+Ya:
+
+```text
+Rule:
+Container must not run as root.
+```
+
+---
+
+### 2. Policies ko code mein maintain karo
+
+Policies Git repository mein rakhi ja sakti hain:
+
+```text
+security-policies/
+├── iam-policy
+├── kubernetes-policy
+├── terraform-policy
+└── container-policy
+```
+
+Iska benefit: **version control, code review, audit trail**.
+
+---
+
+### 3. CI/CD pipeline mein integrate karo
+
+```text
+Developer
+   ↓
+Git PR
+   ↓
+Build
+   ↓
+Security-as-Code Policy Check
+   ↓
+ ┌───────────────┐
+ │ Policy Pass?  │
+ └───────┬───────┘
+         │
+    YES  │  NO
+     ↓   │   ↓
+ Deploy  │  ❌ Block
+         │
+       Fix
+```
+
+---
+
+## 4. Different layers par policies
+
+### 🏗️ Infrastructure
+
+Terraform/cloud configuration:
+
+```text
+Terraform
+   ↓
+Checkov / tfsec / OPA
+   ↓
+Misconfiguration?
+```
+
+Examples:
+
+* Public S3 bucket ❌
+* Open security group ❌
+* Excessive IAM permission ❌
+
+---
+
+### ☸️ Kubernetes
+
+Policies enforce kar sakte hain:
+
+```text
+Container:
+runAsRoot = false
+privileged = false
+```
+
+Agar developer deploy kare:
+
+```yaml
+privileged: true
+```
+
+Policy engine:
+
+```text
+❌ Deployment rejected
+```
+
+Tools/technologies include **OPA/Gatekeeper, Kyverno**, etc.
+
+---
+
+### 🔐 IAM
+
+Policy-as-code se enforce kar sakte hain:
+
+> Developer role ko production database delete permission nahi milegi.
+
+---
+
+### 🐳 Container
+
+Rules:
+
+```text
+No critical CVEs
+No embedded secrets
+No privileged container
+Trusted base image only
+```
+
+---
+
+## 5. Security policies ko "quality gate" banao
+
+Example:
+
+```text
+Critical vulnerability → BLOCK
+Public production resource → BLOCK
+Hardcoded secret → BLOCK
+Privileged container → BLOCK
+```
+
+So security **recommendation nahi**, automated enforcement ban jaati hai.
+
+---
+
+## 🎯 Interview answer
+
+> **"Security as Code means defining security policies and controls in code and automatically enforcing them through CI/CD and runtime environments. I would store policies in Git, version-control them, review changes through pull requests, and integrate policy engines and scanners into the pipeline. For example, Terraform can be checked for public resources or excessive IAM permissions, Kubernetes manifests can be checked for privileged containers, and container images can be checked for critical vulnerabilities. Policy violations can automatically fail the pipeline or block deployment."**
+
+### 🧠 Ek line mein
+
+**Security as Code = Security rules ko code mein likho → Git mein rakho → pipeline mein automatically test karo → violation ho to automatically block karo.**
+
+32. What is Security as Code?
+    **Security as Code** ka simple meaning hai:
+
+> **Security rules aur policies ko code ki tarah define karna aur automatically enforce karna.**
+
+Matlab security ko manually check karne ke bajay **CI/CD pipeline automatically check karegi** ki system secure hai ya nahi.
+
+### Simple example
+
+Company ka rule:
+
+> **Production server ka SSH port (22) internet se open nahi hona chahiye.**
+
+Without Security as Code:
+
+```text
+Terraform
+   ↓
+Deploy
+   ↓
+Security Team manually checks
+   ↓
+❌ Issue found
+```
+
+With Security as Code:
+
+```text
+Terraform
+   ↓
+Security Policy
+   ↓
+Automated Check
+   ↓
+❌ Violation
+   ↓
+Pipeline BLOCKED
+```
+
+### Security as Code mein kya define kar sakte hain?
+
+**Infrastructure:**
+
+* S3 bucket public nahi hona chahiye
+* Security Group mein unrestricted SSH nahi
+* IAM permissions least-privilege honi chahiye
+
+**Kubernetes:**
+
+* Container privileged nahi hona chahiye
+* Container root user ke naam se nahi chalna chahiye
+* Only approved images allowed
+
+**Application/CI-CD:**
+
+* Hardcoded secrets allowed nahi
+* Critical vulnerabilities allowed nahi
+
+### Typical flow
+
+```text
+Developer
+    ↓
+Git
+    ↓
+CI/CD Pipeline
+    ↓
+Security Policy Check
+    ↓
+ ┌──────────────┐
+ │ Policy Pass? │
+ └──────┬───────┘
+    YES │ NO
+     ↓  │  ↓
+  Deploy ❌ Block
+```
+
+Common technologies include **OPA, Kyverno, Checkov, tfsec**, etc.
+
+### 🎯 Interview answer
+
+> **"Security as Code is the practice of defining security policies and controls in machine-readable code and automatically enforcing them through CI/CD and infrastructure platforms. This makes security consistent, repeatable, version-controlled, and automated instead of relying on manual security checks."**
+
+### 🧠 Yaad rakho
+
+**Security as Code = Security rules ko code mein likho → Git mein maintain karo → automatically test/enforce karo.**
+
+34. What is Policy as Code?
+    **Policy as Code (PaC)** ka simple meaning hai:
+
+> **Rules/policies ko code ke form mein define karna aur automatically enforce karna.**
+
+Security as Code ke context mein, **Policy as Code ek broader concept hai**—policy sirf security ki nahi, compliance, governance, cost, deployment rules, etc. ki bhi ho sakti hai.
+
+### Simple example
+
+Company ka rule:
+
+> **Production mein koi S3 bucket public nahi honi chahiye.**
+
+Policy ko code mein define kar diya:
+
+```text
+IF environment = production
+AND S3 bucket = public
+THEN DENY
+```
+
+Ab manually check karne ki zarurat nahi.
+
+```text id="1lmx8s"
+Developer
+   ↓
+Terraform PR
+   ↓
+Policy Engine
+   ↓
+"Is this allowed?"
+   ↓
+ ┌───────────────┐
+ │               │
+PASS           DENY
+ ↓               ↓
+Deploy          ❌ Block
+```
+
+### Policy as Code se kya enforce kar sakte hain?
+
+**Security:**
+
+```text
+Public S3 → ❌
+Port 22 open to internet → ❌
+Privileged container → ❌
+```
+
+**Compliance:**
+
+```text
+Production data must be encrypted → ✅
+Required tags must exist → ✅
+Approved region only → ✅
+```
+
+**Kubernetes:**
+
+```text
+Container must not run as root → ❌ if violated
+Only trusted images → ✅
+```
+
+### Common tools
+
+* **OPA (Open Policy Agent)**
+* **Kyverno**
+* **HashiCorp Sentinel**
+* **Checkov** — commonly used for IaC security/policy checks
+
+### Security as Code vs Policy as Code
+
+Ye dono similar hain, but exact same nahi:
+
+| Security as Code                     | Policy as Code                                     |
+| ------------------------------------ | -------------------------------------------------- |
+| Security controls automate karta hai | **Any type of rule/policy** automate kar sakta hai |
+| Security-focused                     | Security + compliance + governance + cost, etc.    |
+| Example: vulnerability scanning      | Example: "Production only in approved regions"     |
+| Broader security practices           | Broader policy enforcement mechanism               |
+
+### 🎯 Interview answer
+
+> **"Policy as Code is the practice of defining organizational rules and policies in machine-readable code and automatically enforcing them through tools and CI/CD pipelines. It provides consistent, repeatable, version-controlled policy enforcement. For example, we can define a policy that production resources must not be publicly accessible, and the policy engine can automatically reject any infrastructure that violates it."**
+
+### 🧠 One-line memory trick
+
+**Policy as Code = Rule ko code mein likho → automatically check karo → rule break ho to allow/block karo.**
+
+36. What is the difference between Security as Code and Policy as Code?
+37. How do you make security part of the developer workflow?
+38. How do you implement DevSecOps in an organization that currently has no security automation?
+39. How would you migrate a traditional DevOps pipeline to DevSecOps?
+40. What are the biggest challenges when implementing DevSecOps?
+41. What are the common DevSecOps anti-patterns?
+42. How do you measure DevSecOps maturity?
+43. What DevSecOps metrics would you track?
+44. What is the difference between vulnerability prevention and vulnerability detection?
+45. How do you prioritize security findings?
+46. How do you decide which vulnerabilities should fail a pipeline?
+47. What is risk-based security?
+48. How do you balance security, delivery speed, and business requirements?
+49. How do you handle developers who consider security scans a blocker?
+50. How do you reduce security false positives?
+51. How do you prevent security tools from becoming “checkbox security”?
+52. How do you implement DevSecOps across hundreds of repositories?
+53. How would you standardize security controls across multiple teams?
+54. How would you implement DevSecOps for microservices?
+55. How would you implement DevSecOps for a monolithic application?
+56. How would you implement DevSecOps for serverless applications?
+57. How would you implement DevSecOps in a multi-cloud environment?
 
 ---
 
