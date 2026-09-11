@@ -1291,7 +1291,288 @@ Host:8080 → Container:8080
 **ENV = Application ko configuration/value**
 **EXPOSE = Container ka intended port/documentation**
 **`-p` = Actual host-to-container port mapping**
+=================
+Haan — **almost koi bhi Linux command `RUN` mein technically chala sakte ho**, aur bahut si commands ko runtime par `CMD/ENTRYPOINT` se bhi chala sakte ho. **Lekin “kuch bhi, bas jagah alag” 100% sahi nahi hai.** Kuch kaam build-time ke hain, kuch runtime ke.
 
+### Sabse important distinction
+
+| Kaam                           |               Image build time (`RUN`) | Container runtime (`CMD/ENTRYPOINT`) | Typical choice |
+| ------------------------------ | -------------------------------------: | -----------------------------------: | -------------- |
+| `npm install`                  |                                      ✅ |                                    ✅ | Build          |
+| `pip install`                  |                                      ✅ |                                    ✅ | Build          |
+| `apt install curl`             |                                      ✅ |                          ⚠️ Possible | Build          |
+| Files create karna             |                                      ✅ |                                    ✅ | Depends        |
+| App compile/build karna        |                                      ✅ |                          ⚠️ Possible | Build          |
+| `npm start`                    | ⚠️ Technically possible, usually wrong |                                    ✅ | Runtime        |
+| Web server start karna         |                        ❌ Usually wrong |                                    ✅ | Runtime        |
+| Database se connect karna      |                       ⚠️ Usually avoid |                                    ✅ | Runtime        |
+| Runtime API call               |                       ⚠️ Usually avoid |                                    ✅ | Runtime        |
+| Runtime config read karna      |             ❌ Can't know future values |                                    ✅ | Runtime        |
+| Environment variable use karna |              Build-time value possible |                                    ✅ | Runtime        |
+| Port listen karna              |                                      ❌ |                                    ✅ | Runtime        |
+| User request serve karna       |                                      ❌ |                                    ✅ | Runtime        |
+| Health endpoint serve karna    |                                      ❌ |                                    ✅ | Runtime        |
+
+---
+
+# 🧠 Best mental model
+
+### Build time = **"Image ko ready karo"**
+
+```dockerfile
+RUN apt-get update
+RUN npm ci
+RUN npm run build
+RUN mkdir /app/logs
+```
+
+Matlab:
+
+> "Container banne se pehle jo preparation karni hai, kar do."
+
+Result:
+
+```text
+Dockerfile
+   ↓
+docker build
+   ↓
+RUN commands
+   ↓
+Docker IMAGE
+   ↓
+Ready
+```
+
+---
+
+### Runtime = **"Ready image se application chalao"**
+
+```dockerfile
+CMD ["npm", "start"]
+```
+
+Matlab:
+
+> "Ab container start hua hai, application chalao."
+
+```text
+Docker IMAGE
+    ↓
+docker run
+    ↓
+CMD / ENTRYPOINT
+    ↓
+CONTAINER
+    ↓
+Application running
+```
+
+---
+
+# 🔥 Example: `npm install`
+
+Technically dono jagah possible:
+
+### Build time — recommended
+
+```dockerfile
+FROM node:22-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+
+RUN npm ci
+
+COPY . .
+
+CMD ["npm", "start"]
+```
+
+```text
+BUILD:
+npm ci
+  ↓
+dependencies image mein
+  ↓
+RUN complete
+
+RUNTIME:
+npm start
+```
+
+---
+
+### Runtime — possible but usually bad
+
+```dockerfile
+FROM node:22-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+COPY . .
+
+CMD ["sh", "-c", "npm install && npm start"]
+```
+
+```text
+BUILD:
+Nothing installed
+
+RUNTIME:
+npm install
+   ↓
+npm start
+```
+
+Problem:
+
+* Container start slow
+* Registry/network required
+* Runtime failure possible
+* Every new container potentially installs dependencies again
+* Reproducibility/cache benefit reduced
+
+---
+
+# ⚠️ Ek important case: Runtime information
+
+Suppose:
+
+```dockerfile
+ENV DB_HOST=localhost
+```
+
+Ye image mein default configuration rakh sakta hai.
+
+But actual production DB:
+
+```bash
+docker run -e DB_HOST=prod-db myimage
+```
+
+Ye value **runtime par** milti hai.
+
+Isliye:
+
+```text
+Build time:
+"Image kaise banegi?"
+
+Runtime:
+"Ye particular environment mein kaise chalegi?"
+```
+
+---
+
+# ⭐ Kuch cheezein runtime par hi meaningful hain
+
+Example:
+
+```dockerfile
+CMD ["npm", "start"]
+```
+
+Application ko database chahiye:
+
+```text
+Container starts
+      ↓
+Application starts
+      ↓
+DB se connect
+      ↓
+Requests serve
+```
+
+Build ke waqt production DB se connect karna generally **wrong design** hai.
+
+---
+
+# ⭐ Kuch cheezein build time par hi honi chahiye
+
+Example:
+
+```dockerfile
+RUN npm run build
+```
+
+Suppose React application:
+
+```text
+Source code
+    ↓
+npm run build
+    ↓
+dist/
+    ↓
+Image
+```
+
+Runtime par tum generally source compile nahi karna chahte.
+
+---
+
+# 🔥 Aur ek bahut important distinction
+
+`RUN` **sirf "build-time command" hone ki wajah se special nahi hai**.
+
+Actually:
+
+```dockerfile
+RUN <command>
+```
+
+Docker build ke time ek temporary container/layer mein command execute karta hai aur resulting filesystem changes image layer mein capture karta hai.
+
+Whereas:
+
+```dockerfile
+CMD [...]
+```
+
+**command execute nahi karta during build**.
+
+It tells Docker:
+
+> "Container start hoga to default mein ye command chalana."
+
+---
+
+# Final rule — interview mein ye bolo
+
+> **Technically many commands can be executed at either build time or runtime, but they serve different purposes. Build-time operations prepare an immutable, reusable image; runtime operations start and configure the application for its actual environment.**
+
+### Yaad karne ke liye:
+
+```text
+BUILD TIME
+──────────
+Install
+Compile
+Build
+Create files/directories
+Copy application
+Set image filesystem
+       ↓
+     IMAGE
+       ↓
+RUNTIME
+────────
+Start application
+Listen on port
+Connect to DB
+Read runtime config
+Process requests
+Handle traffic
+       ↓
+   CONTAINER
+```
+
+**Isliye “kuch bhi kar sakte hain, bas jagah alag hai” ko interview mein mat bolna.** Better line hai: **“Many commands are technically possible in both, but we choose build vs runtime based on whether the operation prepares the image or depends on the running environment.”**
+=================
 ### 57. What is `ARG`?
 ### What is `ARG` in Docker?
 
