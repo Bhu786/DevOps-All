@@ -900,69 +900,2859 @@ CMD        → docker run/start time
 **`RUN = Image banate waqt command chalao.`**
 
 ### 50. What is `CMD`?
+### `CMD` kya hai?
+
+`CMD` Dockerfile mein **default command** batata hai jo **container start hone par run hota hai**.
+
+Example:
+
+```dockerfile
+FROM python:3.12
+WORKDIR /app
+COPY . .
+CMD ["python", "app.py"]
+```
+
+Jab:
+
+```bash
+docker run myapp
+```
+
+hoga, Docker:
+
+```text
+Container start
+     ↓
+CMD execute
+     ↓
+python app.py
+     ↓
+Application running
+```
+
+### `RUN` vs `CMD`
+
+🧠 **Sabse important:**
+
+```text
+RUN → Image BUILD karte time
+CMD → Container START karte time
+```
+
+Example:
+
+```dockerfile
+RUN pip install flask      # Build time
+CMD ["python", "app.py"]   # Container start time
+```
+
+### CMD ko override kar sakte hain?
+
+**Haan.**
+
+Dockerfile:
+
+```dockerfile
+CMD ["python", "app.py"]
+```
+
+Lekin:
+
+```bash
+docker run myapp python test.py
+```
+
+to `CMD` ki jagah `python test.py` chalega.
+
+👉 **Interview line:**
+**“CMD defines the default command that runs when a container starts, and it can be overridden at runtime.”**
 
 ### 51. What is `ENTRYPOINT`?
+### `ENTRYPOINT` kya hai?
+
+`ENTRYPOINT` container ka **main/default executable** set karta hai — yani container start hote hi **kaunsa program run hona chahiye**.
+
+Example:
+
+```dockerfile
+FROM ubuntu
+ENTRYPOINT ["echo"]
+```
+
+Run:
+
+```bash
+docker run myimage Hello
+```
+
+Output:
+
+```text
+Hello
+```
+
+Yahan `echo` **ENTRYPOINT** hai aur `Hello` usko argument mila.
+
+### CMD vs ENTRYPOINT 🧠
+
+```dockerfile
+ENTRYPOINT ["python"]
+CMD ["app.py"]
+```
+
+Run:
+
+```bash
+docker run myimage
+```
+
+→ `python app.py`
+
+Agar:
+
+```bash
+docker run myimage test.py
+```
+
+→ `python test.py`
+
+**Simple yaad rakho:**
+
+* **ENTRYPOINT = main program/executable**
+* **CMD = default argument/default command**
+
+👉 **Interview line:** **“ENTRYPOINT defines the main executable of a container, while CMD provides default arguments or a default command that can be overridden.”**
 
 ### 52. CMD vs ENTRYPOINT?
+### CMD vs ENTRYPOINT
+
+| CMD                                              | ENTRYPOINT                                             |
+| ------------------------------------------------ | ------------------------------------------------------ |
+| Default command/arguments deta hai               | Main executable set karta hai                          |
+| Runtime par easily override hota hai             | Normally main program fixed rakhta hai                 |
+| Optional/default behavior ke liye                | Container ka primary purpose define karne ke liye      |
+| `docker run image <new>` se replace ho sakta hai | `docker run image <new>` usually argument ban jata hai |
+
+### Example
+
+```dockerfile
+ENTRYPOINT ["python"]
+CMD ["app.py"]
+```
+
+Normal:
+
+```bash
+docker run myimage
+```
+
+➡️ `python app.py`
+
+Override:
+
+```bash
+docker run myimage test.py
+```
+
+➡️ `python test.py`
+
+### 🧠 Easy trick
+
+**ENTRYPOINT = "Kya run karna hai?"**
+**CMD = "Default mein kya dena hai?"**
+
+👉 **Interview:**
+**“ENTRYPOINT defines the main executable, while CMD provides default arguments or a default command that can be overridden.”**
 
 ### 53. What is `EXPOSE`?
+### `EXPOSE` kya hai?
+
+`EXPOSE` Dockerfile mein **batata hai ki container ke andar application kis port par listen karegi**.
+
+Example:
+
+```dockerfile
+EXPOSE 8080
+```
+
+Matlab:
+
+> **“Meri application container ke andar port 8080 par listen kar rahi hai.”**
+
+### Important ⚠️
+
+`EXPOSE` **port ko actually internet/host par open nahi karta**.
+
+Port ko host se connect karne ke liye:
+
+```bash
+docker run -p 8080:8080 myapp
+```
+
+```text
+Host:8080
+    ↓
+Container:8080
+    ↓
+Application
+```
+
+🧠 **Yaad rakho:**
+
+**`EXPOSE` = documentation/metadata: container ka kaunsa port intended hai.**
+
+**`-p` = actual port mapping.**
+
+👉 **Interview line:**
+**“EXPOSE documents the port on which a containerized application listens; it does not publish the port by itself.”**
 
 ### 54. Does `EXPOSE` actually publish a port?
+**No. ❌ `EXPOSE` port ko publish nahi karta.**
+
+```dockerfile
+EXPOSE 8080
+```
+
+Sirf Docker ko batata hai:
+
+> “Application container ke andar port `8080` par listen kar sakti hai.”
+
+Actual port publish karne ke liye:
+
+```bash
+docker run -p 8080:8080 myapp
+```
+
+### 🧠 Yaad rakho
+
+**EXPOSE → Inform/document**
+**`-p` → Publish/map**
+
+👉 **Interview:** “`EXPOSE` does not publish a port; `-p` is used to publish/map the container port to the host.”
 
 ### 55. `EXPOSE` vs `-p`?
+### `EXPOSE` vs `-p`
+
+| `EXPOSE`                               | `-p`                                          |
+| -------------------------------------- | --------------------------------------------- |
+| Dockerfile instruction                 | `docker run` option                           |
+| Port ko **declare/document** karta hai | Port ko **publish/map** karta hai             |
+| Actual traffic allow nahi karta        | Host se container tak traffic route karta hai |
+| Build time metadata                    | Container run time par use                    |
+| Example: `EXPOSE 8080`                 | Example: `-p 8080:8080`                       |
+
+### Example
+
+```dockerfile
+EXPOSE 8080
+```
+
+➡️ **“Container app 8080 par listen karegi.”**
+
+```bash
+docker run -p 8080:8080 myapp
+```
+
+➡️ **“Host ke 8080 ko container ke 8080 se connect karo.”**
+
+```text
+Without -p:
+
+Host ❌ → Container:8080
+
+With -p:
+
+Host:8080 → Container:8080 → App
+```
+
+🧠 **Shortcut:**
+
+**`EXPOSE` = batana**
+**`-p` = connect/publish karna**
+
+### cmd vs entrypoint vs run vs copy 
+| Instruction      | Kab chalta hai? | Kya karta hai?                          |
+| ---------------- | --------------- | --------------------------------------- |
+| **`COPY`**       | `docker build`  | Local files → image mein copy           |
+| **`RUN`**        | `docker build`  | Image banate waqt command execute       |
+| **`ENTRYPOINT`** | `docker run`    | Container ka main program set karta hai |
+| **`CMD`**        | `docker run`    | Default command/arguments deta hai      |
 
 ### 56. What is `ENV`?
+### `ENV` kya hai?
+
+`ENV` Dockerfile mein **environment variable set** karta hai. Ye value container ke andar application use kar sakti hai.
+
+Example:
+
+```dockerfile
+ENV APP_ENV=production
+ENV PORT=8080
+```
+
+Ab container ke andar:
+
+```text
+APP_ENV = production
+PORT    = 8080
+```
+
+Application in values ko read kar sakti hai.
+
+### Kyu use karte hain?
+
+Configuration ko code se alag rakhne ke liye.
+
+Example:
+
+```text
+Development → APP_ENV=dev
+Testing     → APP_ENV=test
+Production  → APP_ENV=production
+```
+
+### Important
+
+`ENV` se set ki gayi value **image ka part** ban sakti hai aur container mein available hoti hai.
+
+⚠️ **Password/API key jaise secrets `ENV` mein hard-code nahi karne chahiye.**
+
+🧠 **Yaad rakho:**
+**`ENV = Container/application ke liye environment variable set karo.`**
+
+**Interview:** "`ENV` sets environment variables that are available to subsequent build instructions and running containers."
+### expose me bhi port de rahe env me bhi kon lega kya diff hai 
+Haan, confusion natural hai — **`EXPOSE` mein bhi port number hai aur `ENV` mein bhi port number de sakte hain**, lekin dono ka **purpose alag** hai.
+
+### Example
+
+```dockerfile
+EXPOSE 8080
+ENV PORT=8080
+```
+
+Dono `8080` hain, but:
+
+**`EXPOSE 8080`**
+→ Docker ko batata hai:
+
+> “Application **8080 port par listen karne ka intention** rakhti hai.”
+
+**`ENV PORT=8080`**
+→ **Application ko value deta hai:**
+
+> “Tumhara port number `8080` hai.”
+
+### Kaun use karega?
+
+```text
+EXPOSE 8080
+     ↓
+Docker / developer / networking metadata
+
+ENV PORT=8080
+     ↓
+Application
+```
+
+Example application:
+
+```python
+app.run(port=os.getenv("PORT"))
+```
+
+Application `ENV` se `8080` read karegi.
+
+### Aur actual traffic?
+
+Uske liye:
+
+```bash
+docker run -p 8080:8080 myapp
+```
+
+```text
+ENV PORT=8080
+      ↓
+Application listens on 8080
+
+EXPOSE 8080
+      ↓
+Documents container port
+
+-p 8080:8080
+      ↓
+Host:8080 → Container:8080
+```
+
+🧠 **3 cheezein yaad rakho:**
+
+**ENV = Application ko configuration/value**
+**EXPOSE = Container ka intended port/documentation**
+**`-p` = Actual host-to-container port mapping**
 
 ### 57. What is `ARG`?
+### What is `ARG` in Docker?
+
+`ARG` stands for **Argument**. It is used to define a **variable that is available during Docker image build time**.
+
+```dockerfile
+ARG APP_VERSION=1.0
+RUN echo "Building version $APP_VERSION"
+```
+
+Build it with:
+
+```bash
+docker build --build-arg APP_VERSION=2.0 -t myapp .
+```
+
+Now during the build, `APP_VERSION` will be `2.0`.
+
+### `ARG` vs `ENV`
+
+| `ARG`                                  | `ENV`                              |
+| -------------------------------------- | ---------------------------------- |
+| Build-time variable                    | Runtime environment variable       |
+| Mainly available during `docker build` | Available inside running container |
+| Can be passed using `--build-arg`      | Can be set using `-e`              |
+| Not normally available after build     | Available when container runs      |
+
+Example:
+
+```dockerfile
+ARG VERSION=1.0
+ENV APP_ENV=production
+
+RUN echo $VERSION
+```
+
+🧠 **Yaad rakho:**
+
+**`ARG` → Build ke time value**
+**`ENV` → Container/Application run time value**
+
+👉 **Interview line:**
+
+> "`ARG` defines build-time variables that can be passed to Docker during image creation using `--build-arg`."
 
 ### 58. ARG vs ENV?
+## `ARG` vs `ENV` in Docker
 
-### 59. What is `USER`?
+Simple difference:
 
-### 60. What is `VOLUME`?
+**`ARG` = Build time**
+**`ENV` = Runtime**
 
-### 61. What is `HEALTHCHECK`?
+|                                     | `ARG`                        | `ENV`                   |
+| ----------------------------------- | ---------------------------- | ----------------------- |
+| Full form                           | Argument                     | Environment Variable    |
+| Used when?                          | `docker build`               | Container runtime       |
+| Set using                           | `--build-arg`                | `-e` / Dockerfile `ENV` |
+| Available during build?             | ✅ Yes                        | ✅ Yes                   |
+| Available inside running container? | ❌ Not by default             | ✅ Yes                   |
+| Typical use                         | Version, build configuration | App configuration       |
+| Secret?                             | ❌ Don't use for secrets      | ❌ Don't use for secrets |
 
-### 62. What is `SHELL`?
+### Example
 
-### 63. What is `LABEL`?
+```dockerfile
+FROM python:3.12
 
-### 64. What is `ONBUILD`?
+ARG APP_VERSION=1.0
 
-### 65. What is `STOPSIGNAL`?
+ENV APP_ENV=production
 
-### 66. What is `MAINTAINER` and why isn't it generally used?
+RUN echo "Building version $APP_VERSION"
 
-### 67. Which Dockerfile instructions create layers?
+CMD ["python", "app.py"]
+```
 
-### 68. What is Docker build context?
+Build:
 
-### 69. What does `.` mean in `docker build -t app .`?
+```bash
+docker build --build-arg APP_VERSION=2.0 -t myapp .
+```
 
-### 70. What is `.dockerignore`?
+Here:
 
-### 71. Why should we use `.dockerignore`?
+* `APP_VERSION=2.0` → used **while building the image**
+* `APP_ENV=production` → available **when the container runs**
 
-### 72. What happens if `.dockerignore` is missing?
+### Easy real-life example
 
-### 73. How do you reduce Docker image size?
+Suppose you're building an application:
 
-### 74. How do you optimize a Dockerfile?
+```text
+ARG VERSION=2.0
+```
 
-### 75. Why should dependencies be copied before application source?
+means:
 
-### 76. How does Docker build cache work?
+> "Build this image using version 2.0."
 
-### 77. What invalidates Docker cache?
+```text
+ENV APP_ENV=production
+```
 
-### 78. How do you debug a failed Docker build?
+means:
 
-### 79. How do you make Docker builds reproducible?
+> "When the application runs, run it in production environment."
 
-### 80. How do you build a production-grade Dockerfile?
+### 🧠 Best shortcut
+
+> **ARG → Build configuration**
+> **ENV → Application/Runtime configuration**
+
+👉 **Interview line:**
+**"`ARG` is for build-time variables, whereas `ENV` is for environment variables available to the running container."**
+### arguments and env variable me kya diff hai 
+Simple language mein:
+
+### 1. Argument kya hota hai?
+
+**Argument = kisi command/program ko input dena.**
+
+Example:
+
+```bash
+docker build --build-arg VERSION=2.0 .
+```
+
+Yahan `VERSION=2.0` ek **argument** hai.
+
+Matlab:
+
+> "Docker ko build karte time ye value de do."
+
+Ye mainly **build ke time** use hota hai.
 
 ---
 
+### 2. Environment variable kya hota hai?
+
+**Environment variable = application ke environment mein ek value store karna**, jise application runtime par read kar sakti hai.
+
+Example:
+
+```bash
+docker run -e APP_ENV=production myapp
+```
+
+Application ke andar:
+
+```text
+APP_ENV = production
+```
+
+Matlab:
+
+> "Jab application chale, usko batao ki environment production hai."
+
+---
+
+### Real-life example
+
+Socho tum restaurant mein ho:
+
+**Argument:**
+
+> Customer order dete waqt bolta hai: "Pizza large banana."
+
+→ Ek specific command/input ke saath value di.
+
+**Environment variable:**
+
+> Restaurant ke system mein `LOCATION=Delhi` already configured hai.
+
+→ System/application jab bhi chale, wo value use kar sakta hai.
+
+### Docker mein 🧠
+
+```text
+ARG → Docker build ko input
+ENV → Running application ko configuration
+```
+
+Example:
+
+```dockerfile
+ARG VERSION=2.0
+ENV APP_ENV=production
+```
+
+**Interview line:**
+
+> **Argument is an input passed to a command/build, while an environment variable is a named value available to a process/application in its environment.**
+
+### 59. What is `USER`?
+## What is `USER` in Docker?
+
+`USER` Dockerfile instruction **decides which Linux user will run commands/processes inside the container**.
+
+### Example
+
+```dockerfile
+FROM ubuntu:22.04
+
+RUN useradd -m appuser
+
+USER appuser
+
+CMD ["./app.sh"]
+```
+
+Here:
+
+```text
+USER appuser
+     ↓
+Container ka main application
+     ↓
+appuser ke permissions se chalega
+```
+
+### Why use `USER`?
+
+Main reason = **security**.
+
+By default, many containers run as **root** user, which has high privileges.
+
+Instead:
+
+```dockerfile
+USER appuser
+```
+
+runs the application as a **non-root user**, reducing the impact if the application is compromised.
+
+### 🧠 Yaad rakho
+
+> **`USER` = Container ke andar application kis user ke naam/permission se chalegi.**
+
+👉 **Interview line:**
+
+> "`USER` specifies the user or UID that will be used to run subsequent Dockerfile instructions and the container's main process."
+
+### 60. What is `VOLUME`?
+## What is `VOLUME` in Docker?
+
+`VOLUME` is used to create a **persistent storage location** for a container.
+
+Normally, container ke andar jo data create/change hota hai, **container delete hone par lost ho sakta hai**.
+
+`VOLUME` ka purpose hai:
+
+> **Container ke important data ko container lifecycle se separate rakhna.**
+
+### Example
+
+```dockerfile
+FROM mysql:8
+
+VOLUME /var/lib/mysql
+```
+
+MySQL ka data `/var/lib/mysql` mein store hoga, aur Docker us location ko persistent volume ke saath manage kar sakta hai.
+
+### Without Volume
+
+```text
+Container
+   |
+   └── Application data
+            ↓
+      Container deleted
+            ↓
+         Data lost ❌
+```
+
+### With Volume
+
+```text
+Container
+   |
+   └── /data
+        |
+        ↓
+     Docker Volume
+        |
+        ↓
+    Data remains ✅
+```
+
+### Important difference
+
+```dockerfile
+VOLUME /data
+```
+
+**`VOLUME` → Dockerfile mein storage location declare karta hai.**
+
+While:
+
+```bash
+docker run -v mydata:/data myapp
+```
+
+**`-v` → actual volume ko container ke `/data` se mount karta hai.**
+
+### 🧠 Yaad rakho
+
+> **Volume = Container ke bahar persistent data storage.**
+
+👉 **Interview line:**
+
+> "`VOLUME` declares a mount point for persistent data so that the data can survive beyond the container's lifecycle."
+
+### 61. What is `HEALTHCHECK`?
+## What is `HEALTHCHECK` in Docker?
+
+`HEALTHCHECK` Docker ko batata hai ki **container ke andar application actually healthy hai ya nahi**.
+
+Container running hona ≠ application healthy hona.
+
+### Example
+
+```dockerfile
+FROM nginx
+
+HEALTHCHECK --interval=30s --timeout=5s \
+  CMD curl -f http://localhost:80/ || exit 1
+```
+
+Docker har **30 seconds** check karega:
+
+```text
+Container running?
+       ↓
+   Healthcheck
+       ↓
+Application responding?
+   ↓           ↓
+  YES          NO
+healthy      unhealthy
+```
+
+### Status kaise dekhein?
+
+```bash
+docker ps
+```
+
+Example:
+
+```text
+Up 2 minutes (healthy)
+```
+
+or
+
+```text
+Up 2 minutes (unhealthy)
+```
+
+Detailed information:
+
+```bash
+docker inspect <container>
+```
+
+### Important point
+
+`HEALTHCHECK` **container ko restart nahi karta by itself**.
+
+It mainly reports:
+
+```text
+healthy / unhealthy
+```
+
+Orchestration systems such as Kubernetes have their own **liveness/readiness probes** for deciding what action to take.
+
+### 🧠 Yaad rakho
+
+> **HEALTHCHECK = "Container ke andar application sach mein healthy hai?"**
+
+👉 **Interview line:**
+
+> "`HEALTHCHECK` defines a command that Docker periodically runs to determine whether a container's application is healthy."
+
+### 62. What is `SHELL`?
+## What is `SHELL` in Docker?
+
+`SHELL` Dockerfile instruction **defines which shell Docker should use to execute shell-form commands** such as `RUN`.
+
+### Example — Linux
+
+```dockerfile
+FROM ubuntu:22.04
+
+SHELL ["/bin/bash", "-c"]
+
+RUN echo $SHELL
+RUN source /etc/profile && echo "Hello"
+```
+
+Here Docker will use **Bash** instead of the default `/bin/sh`.
+
+### Windows example
+
+```dockerfile
+SHELL ["cmd", "/S", "/C"]
+```
+
+or:
+
+```dockerfile
+SHELL ["powershell", "-Command"]
+```
+
+So basically:
+
+```text
+SHELL
+  ↓
+Which shell should execute commands?
+  ↓
+RUN command
+```
+
+### Why use it?
+
+When you specifically need features of a particular shell.
+
+For example:
+
+```dockerfile
+SHELL ["/bin/bash", "-c"]
+RUN source setup.sh && ./install.sh
+```
+
+`source` is a Bash feature, so you may need Bash instead of `/bin/sh`.
+
+### 🧠 Yaad rakho
+
+> **`SHELL` = Dockerfile ke shell-form commands kis shell ke through run honge.**
+
+👉 **Interview line:**
+
+> "`SHELL` specifies the default shell used to execute shell-form commands in a Dockerfile."
+
+### 63. What is `LABEL`?
+## What is `LABEL` in Docker?
+
+`LABEL` Docker image mein **metadata/information add karne** ke liye use hota hai.
+
+Example:
+
+```dockerfile
+LABEL maintainer="devops-team"
+LABEL version="1.0"
+LABEL environment="production"
+```
+
+Ye information image ke saath store hoti hai.
+
+### Why use `LABEL`?
+
+Image ko **identify, organize aur manage** karne ke liye.
+
+For example:
+
+```text
+Image
+ ├── version = 1.0
+ ├── environment = production
+ ├── team = devops
+ └── project = payment
+```
+
+Check kar sakte ho:
+
+```bash
+docker inspect myapp
+```
+
+### `LABEL` vs `ENV`
+
+**LABEL:**
+
+> Image ke baare mein information/metadata.
+
+**ENV:**
+
+> Application ko runtime configuration/value.
+
+Example:
+
+```dockerfile
+LABEL version="1.0"
+ENV APP_PORT="8080"
+```
+
+* `LABEL version` → image ki information
+* `ENV APP_PORT` → application ki configuration
+
+### 🧠 Yaad rakho
+
+> **`LABEL` = Image ke baare mein metadata/information.**
+
+👉 **Interview line:**
+
+> "`LABEL` adds metadata to a Docker image, such as version, maintainer, project, or environment information."
+
+### 64. What is `ONBUILD`?
+## What is `ONBUILD` in Docker?
+
+`ONBUILD` ka matlab hai:
+
+> **"Abhi command mat chalao; jab koi doosri image is image ko `FROM` kare, tab command chalao."**
+
+### Simple example
+
+Suppose tum ek **base image** bana rahe ho:
+
+```dockerfile
+FROM node:22
+
+ONBUILD COPY . /app
+ONBUILD RUN npm install
+```
+
+Ab koi developer is image ko use karta hai:
+
+```dockerfile
+FROM my-node-base
+CMD ["npm", "start"]
+```
+
+Jab `my-node-base` se **new image build** hogi:
+
+```text
+FROM my-node-base
+       ↓
+ONBUILD COPY . /app
+       ↓
+ONBUILD RUN npm install
+       ↓
+New image ready
+```
+
+### Normal `RUN` vs `ONBUILD`
+
+```dockerfile
+RUN npm install
+```
+
+➡️ **Isi image ko build karte waqt** execute hoga.
+
+```dockerfile
+ONBUILD RUN npm install
+```
+
+➡️ **Child image ko build karte waqt** execute hoga.
+
+### 🧠 Yaad rakho
+
+> **`RUN` = abhi execute karo**
+> **`ONBUILD` = child image build hone par execute karo**
+
+👉 **Interview line:**
+
+> "`ONBUILD` adds a trigger to an image that executes a Dockerfile instruction when another image uses it as a base image."
+
+### 65. What is `STOPSIGNAL`?
+## What is `STOPSIGNAL` in Docker?
+
+`STOPSIGNAL` Docker ko batata hai ki **container stop karte waqt main process ko kaunsa OS signal bhejna hai**.
+
+Example:
+
+```dockerfile
+FROM nginx
+
+STOPSIGNAL SIGTERM
+```
+
+When you run:
+
+```bash
+docker stop mycontainer
+```
+
+Docker main process ko configured signal bhejega.
+
+### Why use it?
+
+Application ko **gracefully stop** karne ke liye.
+
+Example:
+
+```text
+docker stop
+     ↓
+STOPSIGNAL SIGTERM
+     ↓
+Application ko signal
+     ↓
+Cleanup / connections close
+     ↓
+Application exits gracefully
+```
+
+Agar application ko kisi specific signal ki requirement hai, `STOPSIGNAL` useful hota hai.
+
+### Common signals
+
+```text
+SIGTERM → Gracefully stop
+SIGKILL → Forcefully kill
+SIGINT  → Interrupt
+```
+
+Example:
+
+```dockerfile
+STOPSIGNAL SIGTERM
+```
+
+### 🧠 Yaad rakho
+
+> **`STOPSIGNAL` = Container stop karte waqt main process ko kaunsa signal dena hai.**
+
+👉 **Interview line:**
+
+> "`STOPSIGNAL` specifies the system signal that Docker should send to the container's main process when stopping the container."
+
+### 66. What is `MAINTAINER` and why isn't it generally used?
+## What is `MAINTAINER` in Docker?
+
+`MAINTAINER` was an old Dockerfile instruction used to specify **who maintains the image**.
+
+Example:
+
+```dockerfile
+MAINTAINER bhupendra@example.com
+```
+
+Meaning:
+
+> "This image is maintained by this person/team."
+
+### Why isn't it generally used now?
+
+Because `MAINTAINER` is **deprecated**.
+
+Docker recommends using `LABEL` instead:
+
+```dockerfile
+LABEL maintainer="bhupendra@example.com"
+```
+
+`LABEL` is more flexible because you can store multiple pieces of metadata:
+
+```dockerfile
+LABEL maintainer="devops-team"
+LABEL version="1.0"
+LABEL description="Production application"
+```
+
+### 🧠 Easy difference
+
+```text
+MAINTAINER → Old way ❌
+LABEL       → Modern/recommended way ✅
+```
+
+👉 **Interview line:**
+
+> "`MAINTAINER` was used to specify the image maintainer, but it is deprecated and `LABEL` is preferred for storing maintainer and other image metadata."
+
+### 67. Which Dockerfile instructions create layers?
+## Which Dockerfile instructions create layers?
+
+The important interview answer is:
+
+### ✅ Instructions that create filesystem layers
+
+* `RUN`
+* `COPY`
+* `ADD`
+
+Example:
+
+```dockerfile
+FROM ubuntu:22.04
+
+RUN apt-get update          # Layer
+COPY app.py /app/           # Layer
+RUN pip install flask       # Layer
+ADD config.tar /app/        # Layer
+```
+
+Each of these can create a **new image layer**.
+
+### ❌ Instructions that generally don't create filesystem layers
+
+These mainly add metadata/configuration:
+
+```text
+CMD
+ENTRYPOINT
+ENV
+ARG
+EXPOSE
+WORKDIR
+USER
+LABEL
+VOLUME
+STOPSIGNAL
+SHELL
+ONBUILD
+```
+
+### Important interview nuance
+
+`ENV`, `CMD`, `ENTRYPOINT`, etc. can affect the image's **configuration/metadata**, but they don't create a normal filesystem layer like `RUN`, `COPY`, and `ADD`.
+
+### 🧠 Super-short trick
+
+> **`RUN + COPY + ADD` → filesystem layers**
+
+And:
+
+> **Docker image = multiple read-only layers + container writable layer**
+
+**Interview line:**
+
+> "The main Dockerfile instructions that create filesystem layers are `RUN`, `COPY`, and `ADD`."
+
+### 68. What is Docker build context?
+## What is Docker Build Context?
+
+**Docker build context = woh files/folders ka set jo Docker ko `docker build` ke time available karaya jata hai.**
+
+Example:
+
+```bash
+docker build -t myapp .
+```
+
+Yahan:
+
+```text
+.  ← Build context
+```
+
+Matlab current directory ke andar ki files Docker build ke liye available hain.
+
+Suppose folder:
+
+```text
+myapp/
+├── Dockerfile
+├── app.py
+├── requirements.txt
+└── config/
+    └── app.conf
+```
+
+Command:
+
+```bash
+docker build -t myapp .
+```
+
+Then Docker ko ye files build context mein milti hain:
+
+```text
+Docker build context
+        ↓
+ ┌─────────────────┐
+ │ Dockerfile      │
+ │ app.py          │
+ │ requirements.txt│
+ │ config/         │
+ └─────────────────┘
+```
+
+Therefore Dockerfile mein:
+
+```dockerfile
+COPY app.py /app/
+COPY requirements.txt /app/
+```
+
+possible hai, because these files are inside the build context.
+
+### Important: Build context ≠ Image
+
+```text
+Local files
+    ↓
+Build Context
+    ↓ docker build
+Dockerfile instructions
+    ↓
+Docker Image
+    ↓
+Container
+```
+
+### Why is it important?
+
+Docker build ke time `COPY` and `ADD` **build context ke bahar ki files access nahi kar sakte**.
+
+For example:
+
+```bash
+docker build -t myapp /home/user/project
+```
+
+Context = `/home/user/project`
+
+Agar Dockerfile mein:
+
+```dockerfile
+COPY /home/user/secret.txt /app/
+```
+
+likha, aur `secret.txt` context ke bahar hai → ❌ not allowed.
+
+### `.dockerignore`
+
+Unnecessary files ko context mein bhejne se rokne ke liye:
+
+```text
+node_modules
+.git
+*.log
+.env
+```
+
+`.dockerignore` use karte hain.
+
+Isse **build faster hota hai aur unnecessary/sensitive files context mein nahi jaati.**
+
+### 🧠 Yaad rakho
+
+> **Build Context = `docker build` ko diye gaye files/folder ka area, jise Docker build ke time access kar sakta hai.**
+
+👉 **Interview line:**
+
+> "Docker build context is the set of files and directories sent to the Docker daemon and made available to Dockerfile instructions such as `COPY` and `ADD`."
+
+### 69. What does `.` mean in `docker build -t app .`?
+In:
+
+```bash
+docker build -t app .
+```
+
+the **`.` means the current directory**.
+
+It tells Docker:
+
+> **“Use this current directory as the Docker build context.”**
+
+### Example
+
+Suppose you are inside:
+
+```text
+myapp/
+├── Dockerfile
+├── app.py
+└── requirements.txt
+```
+
+You run:
+
+```bash
+cd myapp
+docker build -t app .
+```
+
+Here:
+
+```text
+. 
+↓
+myapp/          ← Build Context
+├── Dockerfile
+├── app.py
+└── requirements.txt
+```
+
+So Docker can use these files in `COPY` / `ADD`.
+
+### Command breakdown
+
+```bash
+docker build -t app .
+            │   │  │
+            │   │  └── . = current directory / build context
+            │   └───── image name = app
+            └───────── build an image
+```
+
+🧠 **Yaad rakho:**
+
+> **`.` = “current directory ko Docker build context bana do.”**
+
+And importantly, **`.` does not mean the Dockerfile itself**. It means the **build context**.
+
+### 70. What is `.dockerignore`?
+## What is `.dockerignore`?
+
+`.dockerignore` is a file that tells Docker:
+
+> **"Build context mein se in files/folders ko Docker ko mat bhejo."**
+
+It works similar to `.gitignore`.
+
+### Example
+
+Project:
+
+```text
+myapp/
+├── Dockerfile
+├── app.py
+├── node_modules/
+├── .git/
+├── .env
+└── debug.log
+```
+
+`.dockerignore`:
+
+```text
+node_modules
+.git
+.env
+*.log
+```
+
+When you run:
+
+```bash
+docker build -t app .
+```
+
+Docker build context mein unnecessary files exclude kar dega.
+
+### Why use `.dockerignore`?
+
+**1. Faster builds** ⚡
+Large unnecessary files Docker ko send nahi hote.
+
+**2. Smaller build context**
+Less data Docker build process ko process karna padta hai.
+
+**3. Avoid sensitive files** 🔐
+For example:
+
+```text
+.env
+*.pem
+credentials/
+```
+
+**4. Cleaner builds**
+
+### `.dockerignore` vs `.gitignore`
+
+```text
+.gitignore     → Git ko files ignore karne ke liye
+.dockerignore  → Docker build context se files exclude karne ke liye
+```
+
+### 🧠 Yaad rakho
+
+> **`.dockerignore` = Docker build context se unwanted files ko exclude karo.**
+
+👉 **Interview line:**
+
+> "`.dockerignore` specifies files and directories that should be excluded from the Docker build context."
+
+### 71. Why should we use `.dockerignore`?
+## Why should we use `.dockerignore`?
+
+Mainly **4 reasons**:
+
+### 1. ⚡ Faster Docker builds
+
+Agar project mein `node_modules`, `.git`, logs, etc. hain, Docker ko unnecessarily build context mein ye files process/send karni pad sakti hain.
+
+```text
+Without .dockerignore
+Project → 500 MB context → Docker
+
+With .dockerignore
+Project → 50 MB context → Docker
+```
+
+Less context = faster build.
+
+### 2. 🔐 Avoid sensitive files
+
+Aisi files ko exclude kar sakte hain:
+
+```text
+.env
+credentials
+*.pem
+secrets/
+```
+
+So they don't become part of the build context and accidentally get copied into the image.
+
+**Important:** `.dockerignore` alone is **not a complete secret-management solution**; secrets should be handled with proper secret mechanisms.
+
+### 3. 📦 Reduce unnecessary data
+
+Example:
+
+```text
+node_modules/
+.git/
+*.log
+tmp/
+```
+
+Inki application image banane ke liye usually zarurat nahi hoti.
+
+### 4. 🧹 Cleaner and predictable builds
+
+Only required files are available to Docker's build process.
+
+### 🧠 Interview shortcut
+
+> **`.dockerignore` = Unwanted + unnecessary + sensitive files ko Docker build context se exclude karna.**
+
+👉 **Interview line:**
+
+> "We use `.dockerignore` to reduce build context size, improve build performance, prevent unnecessary files from being included, and reduce the risk of accidentally exposing sensitive files."
+
+### 72. What happens if `.dockerignore` is missing?
+If `.dockerignore` is **missing**, Docker **normally sends the entire build context** to the Docker build process, except for files Docker excludes by its own built-in behavior.
+
+Example:
+
+```text
+myapp/
+├── Dockerfile
+├── app.py
+├── node_modules/   ← unnecessary
+├── .git/           ← unnecessary
+├── .env             ← sensitive
+└── logs/            ← unnecessary
+```
+
+Run:
+
+```bash
+docker build -t app .
+```
+
+`.` means **this whole directory is the build context**.
+
+### What problems can happen?
+
+* 🐌 **Slower build** → large context has to be transferred/processed.
+* 💾 **More data** → unnecessary files are available to build instructions.
+* 🔐 **Security risk** → you could accidentally `COPY` sensitive files into the image.
+* 🧹 **Less clean builds** → unnecessary files are available to the build.
+
+### Important distinction
+
+Without `.dockerignore`:
+
+```text
+Build Context
+     ↓
+Docker can access files in context
+     ↓
+COPY . .
+     ↓
+Unwanted files may enter image ❌
+```
+
+With `.dockerignore`:
+
+```text
+Project
+  ↓
+.dockerignore filters files
+  ↓
+Smaller/cleaner context
+  ↓
+Docker build
+```
+
+🧠 **Interview line:**
+
+> "If `.dockerignore` is missing, unwanted files in the build context are not filtered by `.dockerignore`, which can increase build time and may lead to accidentally copying unnecessary or sensitive files into the image."
+
+### 73. How do you reduce Docker image size?
+## How do you reduce Docker image size?
+
+Interview mein **main points** ye bolna:
+
+### 1. Use a smaller base image
+
+Instead of:
+
+```dockerfile
+FROM ubuntu:22.04
+```
+
+use a smaller suitable image:
+
+```dockerfile
+FROM python:3.12-slim
+```
+
+or sometimes:
+
+```dockerfile
+FROM alpine
+```
+
+⚠️ Alpine is not always better; compatibility matters.
+
+---
+
+### 2. Use Multi-stage builds ⭐
+
+Build tools ko final image mein mat rakho.
+
+```dockerfile
+FROM node:22 AS builder
+WORKDIR /app
+COPY . .
+RUN npm install && npm run build
+
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+```
+
+Final image mein sirf required output aata hai.
+
+---
+
+### 3. Use `.dockerignore`
+
+Unnecessary files ko build context se exclude karo:
+
+```text
+node_modules
+.git
+*.log
+.env
+```
+
+---
+
+### 4. Don't install unnecessary packages
+
+Avoid:
+
+```dockerfile
+RUN apt-get install -y vim curl git ...
+```
+
+Agar application ko zarurat nahi hai, install mat karo.
+
+---
+
+### 5. Remove package-manager cache
+
+For example:
+
+```dockerfile
+RUN apt-get update && \
+    apt-get install -y nginx && \
+    rm -rf /var/lib/apt/lists/*
+```
+
+---
+
+### 6. Combine related `RUN` commands
+
+Instead of:
+
+```dockerfile
+RUN apt-get update
+RUN apt-get install -y nginx
+RUN rm -rf /var/lib/apt/lists/*
+```
+
+use:
+
+```dockerfile
+RUN apt-get update && \
+    apt-get install -y nginx && \
+    rm -rf /var/lib/apt/lists/*
+```
+
+This can reduce unnecessary intermediate filesystem data.
+
+---
+
+### 7. Don't copy unnecessary files
+
+Instead of blindly:
+
+```dockerfile
+COPY . .
+```
+
+use:
+
+```dockerfile
+COPY package*.json ./
+RUN npm install
+
+COPY src ./src
+```
+
+Only required files are copied.
+
+---
+
+### 8. Use production dependencies only
+
+For Node.js:
+
+```bash
+npm ci --omit=dev
+```
+
+Don't include development dependencies in the production image when they're unnecessary.
+
+---
+
+### 🧠 Interview shortcut
+
+Remember:
+
+> **Small base image + Multi-stage build + `.dockerignore` + only required dependencies/files + clean caches**
+
+### ⭐ Best interview answer
+
+> "I reduce Docker image size by choosing a minimal suitable base image, using multi-stage builds, excluding unnecessary files with `.dockerignore`, installing only required production dependencies, avoiding unnecessary packages, and cleaning package-manager caches."
+
+### 74. How do you optimize a Dockerfile?
+## How do you optimize a Dockerfile?
+
+Dockerfile optimize karne ka main goal hai:
+
+> **Smaller image + faster build + better caching + better security.**
+
+### 1. Use a minimal base image
+
+```dockerfile
+FROM python:3.12-slim
+```
+
+Instead of unnecessarily large:
+
+```dockerfile
+FROM ubuntu:22.04
+```
+
+---
+
+### 2. Use Multi-stage builds ⭐
+
+Build dependencies ko final image mein mat rakho.
+
+```dockerfile
+FROM node:22 AS builder
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+```
+
+---
+
+### 3. Optimize Docker cache ⭐
+
+Frequently changing files ko baad mein copy karo.
+
+❌ Bad:
+
+```dockerfile
+COPY . .
+RUN npm install
+```
+
+Har code change par `npm install` cache invalidate ho sakta hai.
+
+✅ Better:
+
+```dockerfile
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+```
+
+Dependency files change nahi hui → `npm ci` layer cache ho sakti hai.
+
+---
+
+### 4. Use `.dockerignore`
+
+```text
+.git
+node_modules
+.env
+*.log
+```
+
+Unnecessary files build context mein mat bhejo.
+
+---
+
+### 5. Don't install unnecessary packages
+
+Sirf application ko required packages install karo.
+
+```dockerfile
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
+```
+
+---
+
+### 6. Combine related commands
+
+Instead of:
+
+```dockerfile
+RUN apt-get update
+RUN apt-get install -y curl
+RUN rm -rf /var/lib/apt/lists/*
+```
+
+Use:
+
+```dockerfile
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
+```
+
+---
+
+### 7. Run as non-root user 🔐
+
+```dockerfile
+RUN useradd -r appuser
+USER appuser
+```
+
+Security improve hoti hai.
+
+---
+
+### 8. Use `.dockerignore` + selective `COPY`
+
+Instead of blindly:
+
+```dockerfile
+COPY . .
+```
+
+Only required files copy karo where practical.
+
+---
+
+### 9. Use proper `CMD` / `ENTRYPOINT`
+
+Prefer exec form:
+
+```dockerfile
+CMD ["python", "app.py"]
+```
+
+instead of:
+
+```dockerfile
+CMD python app.py
+```
+
+Exec form generally gives better signal handling and avoids an unnecessary shell.
+
+---
+
+### 10. Pin important versions
+
+Instead of:
+
+```dockerfile
+FROM python:latest
+```
+
+prefer a controlled version:
+
+```dockerfile
+FROM python:3.12-slim
+```
+
+This makes builds more predictable.
+
+---
+
+### 🧠 Interview shortcut
+
+Remember:
+
+**`B-C-S-S-D`**
+
+* **B** → Base image small
+* **C** → Cache layers properly
+* **S** → Stage builds (multi-stage)
+* **S** → Security: non-root
+* **D** → Don't copy/install unnecessary things
+
+👉 **Interview line:**
+
+> "I optimize a Dockerfile by using a minimal base image, maximizing layer caching, using multi-stage builds, minimizing dependencies and build context, running as a non-root user, and keeping builds reproducible."
+
+### 75. Why should dependencies be copied before application source?
+Because of **Docker layer caching**. ⭐
+
+Suppose Node.js application hai.
+
+### ❌ Bad Dockerfile
+
+```dockerfile
+FROM node:22
+
+WORKDIR /app
+
+COPY . .
+RUN npm install
+```
+
+Ab tum sirf `app.js` mein ek small change karte ho:
+
+```text
+app.js changed
+      ↓
+COPY . . changed
+      ↓
+RUN npm install
+      ↓
+Cache invalidated ❌
+      ↓
+npm install again
+```
+
+Build slow ho jayega.
+
+---
+
+### ✅ Better Dockerfile
+
+```dockerfile
+FROM node:22
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+```
+
+Ab:
+
+```text
+package.json unchanged
+      ↓
+npm install layer cached ✅
+
+app.js changed
+      ↓
+COPY . . runs again
+      ↓
+npm install doesn't run again ✅
+```
+
+### Why?
+
+Docker **layer by layer cache** karta hai.
+
+Dependencies:
+
+```text
+package.json
+package-lock.json
+```
+
+usually application source code se **less frequently change** hote hain.
+
+So hum:
+
+```text
+Dependencies
+     ↓
+Install dependencies
+     ↓
+Application source
+```
+
+rakhte hain.
+
+### 🧠 Yaad rakho
+
+> **Dependencies first, source code later = better Docker cache = faster builds.**
+
+👉 **Interview line:**
+
+> "We copy dependency files before application source so that the dependency installation layer can be cached and doesn't need to be rebuilt when only application code changes."
+
+### 76. How does Docker build cache work?
+## How does Docker build cache work?
+
+Docker build ke time Docker **har instruction ka result cache** karta hai. Agar next build mein same instruction aur required inputs same hain, Docker **cached layer reuse** kar leta hai instead of running it again.
+
+### Simple example
+
+```dockerfile
+FROM node:22
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+CMD ["npm", "start"]
+```
+
+First build:
+
+```text
+FROM          → Build
+WORKDIR       → Build
+COPY package  → Build
+npm install   → Build
+COPY source   → Build
+```
+
+Next build, agar sirf `app.js` change hua:
+
+```text
+FROM          → CACHE ✅
+WORKDIR       → CACHE ✅
+COPY package  → CACHE ✅
+npm install   → CACHE ✅
+COPY source   → Build again
+```
+
+So Docker ko `npm install` dobara nahi karna pada.
+
+---
+
+## 🔥 Important rule: Cache break hone ke baad?
+
+Docker instructions ko **top-to-bottom** process karta hai.
+
+Agar kisi instruction ka cache match nahi hua, **us instruction se onward subsequent instructions generally cache reuse nahi karte**.
+
+Example:
+
+```dockerfile
+COPY package*.json ./
+RUN npm install
+COPY . .
+RUN npm run build
+```
+
+Agar `package.json` change hua:
+
+```text
+COPY package*.json → CACHE MISS ❌
+RUN npm install    → RUN again
+COPY . .           → RUN again
+npm run build      → RUN again
+```
+
+### Why dependency files first?
+
+Isi wajah se hum:
+
+```dockerfile
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+```
+
+karte hain.
+
+Agar source code change ho:
+
+```text
+Source changed
+    ↓
+COPY . . → rebuild
+    ↓
+npm install → CACHE ✅
+```
+
+Build fast ho jata hai.
+
+---
+
+### 🧠 Easy formula
+
+> **Same instruction + same relevant inputs → Cache HIT ✅**
+
+> **Changed input → Cache MISS ❌ → instruction runs again**
+
+### Interview line
+
+> **"Docker build cache reuses previously built layers when the Dockerfile instruction and its relevant inputs haven't changed, which makes subsequent builds faster."**
+
+### 77. What invalidates Docker cache?
+## What invalidates Docker build cache?
+
+**Cache invalidation = Docker ko existing cached layer reuse nahi karni padti, so it builds that layer again.**
+
+### Common things that invalidate cache:
+
+### 1. Dockerfile instruction changes ⭐
+
+```dockerfile
+RUN npm install
+```
+
+Change to:
+
+```dockerfile
+RUN npm install --production
+```
+
+→ Cache miss ❌
+
+---
+
+### 2. `COPY` / `ADD` source files change ⭐
+
+```dockerfile
+COPY . .
+```
+
+Agar copied files ka content change hua:
+
+```text
+app.py changed
+    ↓
+COPY . . → Cache miss
+```
+
+---
+
+### 3. Files added/removed from the `COPY` source
+
+Example:
+
+```text
+COPY . .
+```
+
+A new file build context mein aa gaya ya relevant copied files change/remove hue → cache can be invalidated.
+
+---
+
+### 4. Previous layer changes
+
+This is **very important**.
+
+```dockerfile
+COPY package.json .
+RUN npm install
+COPY . .
+RUN npm build
+```
+
+If `package.json` changes:
+
+```text
+COPY package.json → MISS
+        ↓
+RUN npm install   → RUN again
+        ↓
+COPY . .           → RUN again
+        ↓
+RUN npm build      → RUN again
+```
+
+Because cache is evaluated sequentially.
+
+---
+
+### 5. Base image changes
+
+```dockerfile
+FROM node:22
+```
+
+If the resolved base image changes, downstream layers may need rebuilding.
+
+For reproducibility, pinning versions/digests can help.
+
+---
+
+### 6. Build arguments can affect cache
+
+Example:
+
+```dockerfile
+ARG VERSION
+RUN echo $VERSION
+```
+
+Build:
+
+```bash
+docker build --build-arg VERSION=1.0 .
+```
+
+Then:
+
+```bash
+docker build --build-arg VERSION=2.0 .
+```
+
+The affected instruction can get a cache miss.
+
+---
+
+### 7. Cache explicitly disabled
+
+If you run:
+
+```bash
+docker build --no-cache -t app .
+```
+
+Docker won't reuse the normal build cache.
+
+---
+
+## 🧠 Super shortcut
+
+Remember:
+
+> **Dockerfile changed → Cache may break**
+> **COPY/ADD input changed → Cache breaks**
+> **Previous layer changed → Following layers rebuild**
+> **Base image changed → Following layers may rebuild**
+> **`--no-cache` → Don't use cache**
+
+👉 **Interview line:**
+
+> "Docker cache is invalidated when an instruction or its relevant inputs change, such as Dockerfile instructions, `COPY`/`ADD` source content, build arguments, or the base image. Once a layer misses, subsequent dependent layers generally need to be rebuilt."
+
+### 78. How do you debug a failed Docker build?
+## How do you debug a failed Docker build?
+
+Interview mein ek **fixed troubleshooting pattern** follow karo:
+
+> **Read error → identify failed instruction → check context → reproduce → fix → rebuild**
+
+### 1. Build output dekho ⭐
+
+```bash
+docker build -t myapp .
+```
+
+Sabse pehle dekho **kaunsi Dockerfile instruction fail hui**.
+
+Example:
+
+```text
+Step 5/8 : RUN npm install
+ ---> Running...
+npm ERR! ...
+ERROR
+```
+
+👉 Problem likely `RUN npm install` mein hai.
+
+---
+
+### 2. Detailed output use karo
+
+```bash
+docker build --progress=plain -t myapp .
+```
+
+Ye detailed logs deta hai, especially BuildKit builds mein.
+
+---
+
+### 3. Dockerfile instruction check karo
+
+Common issues:
+
+```text
+RUN     → command/package installation problem
+COPY    → file/context problem
+FROM    → image/tag/registry problem
+RUN npm → dependency/network problem
+```
+
+---
+
+### 4. Build context check karo ⭐
+
+Agar:
+
+```dockerfile
+COPY app.py /app/
+```
+
+error aa raha hai:
+
+```text
+COPY failed: file not found
+```
+
+Check:
+
+```bash
+ls
+```
+
+and confirm `app.py` **build context ke andar** hai.
+
+Also check `.dockerignore`—kahin file accidentally ignore toh nahi ho rahi.
+
+---
+
+### 5. Base image check karo
+
+```dockerfile
+FROM python:3.12-slim
+```
+
+Check whether image can be pulled:
+
+```bash
+docker pull python:3.12-slim
+```
+
+Possible issues:
+
+* wrong image/tag
+* registry authentication
+* network issue
+* private registry unavailable
+
+---
+
+### 6. Failed command ko independently test karo
+
+Suppose:
+
+```dockerfile
+RUN apt-get install -y nginx
+```
+
+Fail ho raha hai.
+
+Base image run karke manually test:
+
+```bash
+docker run -it ubuntu:22.04 bash
+```
+
+Then:
+
+```bash
+apt-get update
+apt-get install -y nginx
+```
+
+This helps determine whether the problem is with the **command/environment**.
+
+---
+
+### 7. Cache issue ho toh clean rebuild
+
+```bash
+docker build --no-cache -t myapp .
+```
+
+If it works with `--no-cache`, investigate whether stale cache was involved.
+
+---
+
+### 8. `.dockerignore` check karo
+
+Agar required file context mein nahi ja rahi:
+
+```text
+.dockerignore
+     ↓
+file accidentally excluded ❌
+     ↓
+COPY fails
+```
+
+---
+
+### 9. Disk/resource issues check karo
+
+```bash
+docker system df
+```
+
+If Docker environment is running out of space, cleanup may be required:
+
+```bash
+docker system prune
+```
+
+⚠️ `prune` carefully use karo because it removes unused Docker resources.
+
+---
+
+## 🔥 Scenario example
+
+**Problem:**
+
+```text
+COPY package.json ./
+ERROR: file not found
+```
+
+**Troubleshooting:**
+
+```text
+1. Check current directory
+       ↓
+2. Check build context
+       ↓
+3. Check package.json exists
+       ↓
+4. Check .dockerignore
+       ↓
+5. Fix path/context
+       ↓
+6. Rebuild
+```
+
+### 🧠 Master pattern
+
+```text
+BUILD FAILED
+    ↓
+Read exact error
+    ↓
+Find failed Dockerfile instruction
+    ↓
+COPY? → Context / .dockerignore / path
+RUN?  → Command / package / network
+FROM? → Image / tag / registry
+    ↓
+Reproduce & fix
+    ↓
+docker build again
+```
+
+👉 **Interview line:**
+
+> "I debug a failed Docker build by identifying the exact failed instruction from the build logs, checking the Dockerfile, build context and `.dockerignore`, validating the base image and dependencies, reproducing the failing command when necessary, and rebuilding with `--no-cache` if cache-related issues are suspected."
+
+### 79. How do you make Docker builds reproducible?
+## How do you make Docker builds reproducible?
+
+**Reproducible build** ka matlab:
+
+> **Same Dockerfile + same source + same dependencies → consistently same image/result.**
+
+### Main practices:
+
+### 1. Pin the base image ⭐
+
+❌ Avoid:
+
+```dockerfile
+FROM python:latest
+```
+
+Better:
+
+```dockerfile
+FROM python:3.12.8-slim
+```
+
+Even stronger: pin by **image digest** when strict reproducibility is required:
+
+```dockerfile
+FROM python:3.12.8-slim@sha256:<digest>
+```
+
+---
+
+### 2. Pin dependency versions ⭐
+
+❌
+
+```text
+flask
+requests
+```
+
+Better:
+
+```text
+flask==3.0.3
+requests==2.32.3
+```
+
+Or use lock files:
+
+```text
+package-lock.json
+poetry.lock
+requirements.lock
+```
+
+---
+
+### 3. Use deterministic package installation
+
+For example, Node.js:
+
+```dockerfile
+RUN npm ci
+```
+
+instead of:
+
+```dockerfile
+RUN npm install
+```
+
+`npm ci` uses the lock file to install the specified dependency versions.
+
+---
+
+### 4. Don't use `latest`
+
+Avoid:
+
+```dockerfile
+FROM nginx:latest
+```
+
+because `latest` can point to a different image later.
+
+---
+
+### 5. Control build arguments
+
+If you use:
+
+```dockerfile
+ARG VERSION
+```
+
+make sure CI/CD provides a known value rather than something changing randomly.
+
+---
+
+### 6. Don't depend on current external state
+
+Avoid builds that depend on:
+
+```dockerfile
+RUN apt-get install nginx
+```
+
+without controlling the package repository/version.
+
+The package available today may differ from the package available later.
+
+---
+
+### 7. Use a lock file
+
+Dependency lock files ensure:
+
+```text
+Application
+   ↓
+Exact dependency versions
+   ↓
+Same dependency tree
+   ↓
+More predictable image
+```
+
+---
+
+### 8. Use a consistent build environment
+
+Build using the same:
+
+* Docker/BuildKit setup
+* build arguments
+* dependency sources
+* platform/architecture where relevant
+
+CI/CD builds are useful because they provide a controlled environment.
+
+---
+
+## 🧠 Interview shortcut
+
+Remember:
+
+> **Pin everything that can change.**
+
+```text
+Base image       → Pin version/digest
+Dependencies     → Pin versions/lock files
+Build arguments  → Fixed values
+Package sources  → Controlled
+Build environment→ Consistent
+```
+
+👉 **Interview line:**
+
+> **"I make Docker builds reproducible by pinning base images and dependencies, using lock files and deterministic package installation, avoiding mutable tags like `latest`, controlling build arguments and external dependencies, and using a consistent CI build environment."**
+
+### 80. How do you build a production-grade Dockerfile?
+## How do you build a production-grade Dockerfile?
+
+Production-grade Dockerfile ka goal sirf **small image** banana nahi hai. Main goals hain:
+
+> **Security + Small size + Reproducibility + Fast builds + Reliability**
+
+### 1. Use a minimal, pinned base image
+
+```dockerfile
+FROM python:3.12.8-slim
+```
+
+Strict environments mein digest bhi pin kar sakte ho.
+
+---
+
+### 2. Use multi-stage builds ⭐
+
+Build dependencies final image mein nahi honi chahiye.
+
+```dockerfile
+FROM node:22 AS builder
+
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci
+COPY . .
+RUN npm run build
+
+FROM nginx:alpine
+COPY --from=builder /app/dist /usr/share/nginx/html
+```
+
+Final image mein sirf required runtime files.
+
+---
+
+### 3. Optimize layer caching
+
+Dependencies pehle copy karo:
+
+```dockerfile
+COPY package*.json ./
+RUN npm ci
+
+COPY . .
+```
+
+Code change hone par dependency installation layer cached reh sakti hai.
+
+---
+
+### 4. Use `.dockerignore`
+
+```text
+.git
+node_modules
+.env
+*.log
+tests/
+```
+
+Unnecessary/sensitive files context mein mat bhejo.
+
+---
+
+### 5. Run as non-root user 🔐
+
+❌ Avoid running application as root.
+
+```dockerfile
+RUN useradd -r appuser
+USER appuser
+```
+
+Container compromise hone par privileges reduce hote hain.
+
+---
+
+### 6. Don't put secrets in Dockerfile
+
+❌ Don't do:
+
+```dockerfile
+ENV DB_PASSWORD=secret123
+```
+
+Secrets ko runtime secret management / CI/CD secret mechanism se inject karo.
+
+---
+
+### 7. Use `CMD`/`ENTRYPOINT` exec form
+
+Prefer:
+
+```dockerfile
+CMD ["python", "app.py"]
+```
+
+instead of:
+
+```dockerfile
+CMD python app.py
+```
+
+Better signal handling milta hai.
+
+---
+
+### 8. Add a health check when appropriate
+
+```dockerfile
+HEALTHCHECK CMD curl -f http://localhost:8080/health || exit 1
+```
+
+Application actually healthy hai ya nahi, detect karne mein help karta hai.
+
+---
+
+### 9. Minimize packages and clean caches
+
+```dockerfile
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends curl && \
+    rm -rf /var/lib/apt/lists/*
+```
+
+Only required packages install karo.
+
+---
+
+### 10. Make configuration external
+
+Environment-specific values ko hard-code mat karo:
+
+```dockerfile
+ENV APP_ENV=production
+```
+
+But secrets ko image mein bake mat karo.
+
+---
+
+### 11. Pin dependencies
+
+For example:
+
+```text
+flask==3.0.3
+requests==2.32.3
+```
+
+or use a lock file.
+
+---
+
+### 12. Don't run unnecessary processes
+
+Ideally container mein **one main application process** run karo.
+
+---
+
+## ⭐ Production Dockerfile checklist
+
+```text
+✅ Minimal/pinned base image
+✅ Multi-stage build
+✅ Good layer caching
+✅ .dockerignore
+✅ Non-root USER
+✅ No secrets
+✅ Pinned dependencies
+✅ Minimal packages
+✅ Clean package caches
+✅ Exec-form CMD/ENTRYPOINT
+✅ HEALTHCHECK where appropriate
+✅ External configuration
+```
+
+### 🧠 Interview answer
+
+> **"For a production-grade Dockerfile, I use a minimal pinned base image, multi-stage builds, optimized layer caching, `.dockerignore`, pinned dependencies, non-root execution, no secrets in the image, minimal packages, proper health checks, and exec-form `CMD` or `ENTRYPOINT`. I also keep configuration external and make the build reproducible."**
+
+---
+===============
+## build n runtime time cmd 
+Haan, Dockerfile instructions ko **build-time vs container runtime** ke hisaab se aise yaad karo:
+
+### 🔨 Build time — `docker build` ke time
+
+Ye image banate waqt execute/configure hote hain:
+
+| Instruction | Main purpose                           |
+| ----------- | -------------------------------------- |
+| `FROM`      | Base image choose                      |
+| `RUN`       | Command execute during build           |
+| `COPY`      | Files build context se image mein copy |
+| `ADD`       | Files add/copy                         |
+| `ARG`       | Build-time variable                    |
+
+Example:
+
+```dockerfile
+FROM python:3.12
+ARG VERSION=1.0
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install -r requirements.txt
+COPY . .
+```
+
+Flow:
+
+```text
+docker build
+    ↓
+FROM
+    ↓
+ARG
+    ↓
+WORKDIR
+    ↓
+COPY
+    ↓
+RUN
+    ↓
+IMAGE READY
+```
+
+---
+
+### 🚀 Container runtime — `docker run` ke time
+
+Ye mainly container start hone par application ke behavior/configuration ko define karte hain:
+
+| Instruction   | Main purpose                      |
+| ------------- | --------------------------------- |
+| `CMD`         | Default command                   |
+| `ENTRYPOINT`  | Main executable                   |
+| `ENV`         | Runtime environment variable      |
+| `USER`        | Kis user se process chalega       |
+| `WORKDIR`     | Runtime default working directory |
+| `EXPOSE`      | Intended listening port metadata  |
+| `HEALTHCHECK` | Container health check            |
+| `STOPSIGNAL`  | Stop karte waqt signal            |
+
+⚠️ **Important:** `ENV`, `USER`, `WORKDIR`, `EXPOSE`, etc. Docker image mein configuration/metadata ke roop mein **build ke time set** hote hain, but unka effect **container runtime** par hota hai. So strictly speaking, inhe simply “runtime-only instructions” kehna technically incomplete hai.
+
+---
+
+## 🧠 Sabse important distinction
+
+### `RUN` vs `CMD`
+
+```dockerfile
+RUN apt-get install -y nginx
+```
+
+➡️ **Image build karte waqt**
+
+```dockerfile
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+➡️ **Container start karte waqt**
+
+### `ARG` vs `ENV`
+
+```dockerfile
+ARG VERSION=1.0
+```
+
+➡️ **Build-time value**
+
+```dockerfile
+ENV APP_ENV=production
+```
+
+➡️ **Container/application runtime mein available**
+
+### `COPY` vs `CMD`
+
+```dockerfile
+COPY app.py /app/
+```
+
+➡️ Build time
+
+```dockerfile
+CMD ["python", "/app/app.py"]
+```
+
+➡️ Container start time
+
+---
+
+### 🔥 Interview ke liye one-line trick
+
+> **`FROM, RUN, COPY, ADD, ARG` → mainly build process**
+
+> **`CMD, ENTRYPOINT` → container start/run**
+
+> **`ENV, USER, WORKDIR, EXPOSE, HEALTHCHECK, STOPSIGNAL` → image configuration that affects runtime behavior**
+
+Aur **`VOLUME`, `LABEL`, `ONBUILD`, `SHELL`** ko alag category mein rakhna better hai—they primarily declare metadata/configuration or build behavior rather than being simply “build-time commands” or “runtime commands.”
+
+=============
 # LEVEL 4 — CMD vs ENTRYPOINT
 
 ### VERY important for your experience
