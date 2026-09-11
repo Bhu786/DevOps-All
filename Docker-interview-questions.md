@@ -1,12 +1,4 @@
-Yes. I analyzed **both uploaded documents**, including the 7-page PATHNEX PDF and the expanded interview notes. The material covers the Docker fundamentals, commands, networking, volumes, registry, Compose, Swarm/Kubernetes, and cleanup commands. 
-
-But because you have **8 years of development experience**, I would **not prepare only the questions directly present in the PDF**. An interviewer will usually move from:
-
-> **Basic → Concept → Why → How → Troubleshooting → Production → Design → Security → CI/CD → Kubernetes**
-
-The PDF gives a good foundation, but it is **not sufficient for an 8-year-level Docker interview**.
-
-Below is the **master Docker interview question bank** I would use.
+elow is the **master Docker interview question bank** I would use.
 
 ---
 
