@@ -340,18 +340,564 @@ The notes explain the purpose of each instruction.
 Interviewers can ask:
 
 ### 43. What is a Dockerfile?
-
+ A Dockerfile is a text file containing instructions to build a Docker image.
 ### 44. What is `FROM`?
+FROM Dockerfile ki starting point hai.
+=> Jab Docker image banata hai, Docker ko pehle ek base environment chahiye hota hai. FROM batata hai ki kis existing image se start karna hai.
+
+Bilkul simple way mein:
+
+### `FROM` kya hai?
+
+`FROM` Dockerfile ki **starting point** hai.
+
+Jab Docker image banata hai, Docker ko pehle ek **base environment** chahiye hota hai. `FROM` batata hai ki **kis existing image se start karna hai**.
+
+```dockerfile
+FROM ubuntu:22.04
+```
+
+Matlab:
+
+> "Meri image Ubuntu 22.04 se start karo."
+
+---
+
+### Kyu likhte hain?
+
+Maan lo tumhari application Python mein hai.
+
+Tum khud se ye sab setup nahi karna chahte:
+
+```text
+Linux
+↓
+Python install
+↓
+pip install
+↓
+Python dependencies
+↓
+Application
+```
+
+Instead:
+
+```dockerfile
+FROM python:3.12
+```
+
+Docker ko Python wala ready-made environment mil gaya.
+
+Phir:
+
+```dockerfile
+FROM python:3.12
+
+COPY app.py .
+RUN pip install flask
+CMD ["python", "app.py"]
+```
+
+So:
+
+```text
+Python Image
+     ↓
+   FROM
+     ↓
+Add your dependencies
+     ↓
+Add your application
+     ↓
+Docker Image
+```
+
+### `FROM` mein kya-kya likh sakte hain?
+
+Usually **Docker image ka naam + optional tag**:
+
+```dockerfile
+FROM ubuntu
+FROM ubuntu:22.04
+FROM python:3.12
+FROM node:22
+FROM nginx:latest
+FROM alpine:3.20
+```
+
+You can also use a **private/custom image**:
+
+```dockerfile
+FROM mycompany/base-image:1.0
+```
+
+---
+
+### Important: `FROM` OS hi hona zaroori nahi
+
+Ye common interview confusion hai.
+
+```dockerfile
+FROM ubuntu:22.04
+```
+
+→ Ubuntu-based image
+
+```dockerfile
+FROM python:3.12
+```
+
+→ Python environment wali image
+
+```dockerfile
+FROM nginx:latest
+```
+
+→ Nginx wali image
+
+So **`FROM` ka matlab simply "base image choose karo."**
+
+### Ek line mein yaad karo 🧠
+
+**`FROM = Meri Docker image kis existing image se start hogi?`**
+
+**Interview answer:**
+
+> "`FROM` specifies the base image used to build a Docker image."
+
 
 ### 45. What is `WORKDIR`?
+Container ke andar bata dena ki application ka kaam kis folder ke andar hoga.
+
+Haan, **working directory set karna** simple language mein matlab hai:
+
+> **Container ke andar bata dena ki application ka kaam kis folder ke andar hoga.**
+
+### Example
+
+```dockerfile
+WORKDIR /app
+```
+
+Matlab Docker ko bol rahe ho:
+
+> **"Container ke andar `/app` folder ko current/default folder maan lo."**
+
+Ab agar:
+
+```dockerfile
+COPY app.py .
+```
+
+to `app.py` **`/app` ke andar** jayegi.
+
+```text
+Container
+│
+├── bin
+├── etc
+└── app          ← WORKDIR
+    └── app.py
+```
+
+Aur agar:
+
+```dockerfile
+RUN python app.py
+```
+
+to Docker `/app` ke andar se `app.py` run karega.
+
+### Iska main kaam kya hai?
+
+`WORKDIR` basically **`cd` jaisa hai**, lekin Dockerfile ke liye permanent/default working location set karta hai.
+
+```dockerfile
+WORKDIR /app
+```
+
+ke baad:
+
+```dockerfile
+COPY . .
+RUN ...
+CMD ...
+```
+
+normally `/app` ko working directory maan kar operate karte hain.
+
+### Yaad rakhna 🧠
+
+**WORKDIR = "Container ke andar mera kaam kis folder mein hoga?"**
+
+👉 **Interview:** "`WORKDIR` sets the default working directory for subsequent Dockerfile instructions and the container."
+==============
+`WORKDIR /app` mein **`/app` container ke andar hota hai**, tumhari local machine ke normal folder mein nahi.
+
+### Example
+
+Dockerfile:
+
+```dockerfile
+FROM ubuntu
+WORKDIR /app
+COPY . .
+```
+
+Jab image build hoti hai, Docker container/image ke filesystem mein `/app` directory create/use karta hai:
+
+```text
+Container
+│
+├── bin/
+├── etc/
+├── usr/
+└── app/          ← Docker ne create/use kiya
+    ├── app.py
+    └── config/
+```
+
+### `/app` kaise banta hai?
+
+Tumhe pehle manually folder banane ki zarurat nahi hai.
+
+```dockerfile
+WORKDIR /app
+```
+
+Docker **agar `/app` exist nahi karta, to automatically create kar deta hai**.
+
+---
+
+### Local machine par kya hai?
+
+Maan lo tumhari local machine par:
+
+```text
+my-project/
+├── Dockerfile
+├── app.py
+└── requirements.txt
+```
+
+Aur Dockerfile mein:
+
+```dockerfile
+WORKDIR /app
+COPY . .
+```
+
+`COPY . .` ka matlab:
+
+```text
+Local machine                  Container
+
+my-project/                    /app/
+├── app.py       ──────────→   ├── app.py
+├── Dockerfile   ──────────→   ├── Dockerfile
+└── requirements  ─────────→   └── requirements.txt
+```
+
+So **local `my-project` aur container ka `/app` alag locations hain**.
+
+### Sabse important 🧠
+
+```text
+WORKDIR /app
+        ↓
+Container ke andar /app folder
+        ↓
+Aage ki commands yahin se chalengi
+```
+
+**`/app` koi special Docker folder nahi hai.** Tum naam kuch bhi rakh sakte ho:
+
+```dockerfile
+WORKDIR /myapp
+```
+
+ya
+
+```dockerfile
+WORKDIR /usr/src/app
+```
+
+Bas convention ke taur par `/app` bahut commonly use hota hai.
+=============
+Haan, **`WORKDIR` ki zarurat mainly isliye hoti hai taaki container ke andar application ka ek fixed working folder ho.**
+
+### Without `WORKDIR`
+
+Tumhe baar-baar path dena padega:
+
+```dockerfile
+COPY app.py /app/app.py
+RUN python /app/app.py
+```
+
+### With `WORKDIR`
+
+```dockerfile
+WORKDIR /app
+COPY app.py .
+RUN python app.py
+```
+
+Docker samajhta hai ki **ab `/app` hi current folder hai**.
+
+### Real benefit
+
+Agar application mein 20–30 files hain, toh har command mein `/app/...` likhne ki zarurat nahi.
+
+```text
+WORKDIR /app
+     ↓
+Application ka fixed folder
+     ↓
+COPY, RUN, CMD etc. easily kaam karte hain
+```
+
+🧠 **Yaad rakho:**
+**`WORKDIR` = Container ke andar application ka "current/default folder" set karna.**
+
+**Interview:** "`WORKDIR` provides a consistent working location for the application and subsequent Dockerfile instructions."
 
 ### 46. What is `COPY`?
+### `COPY` kya hai?
+
+`COPY` Dockerfile ka instruction hai jo **local machine ke files/folders ko Docker image ke andar copy karta hai**.
+
+### Example
+
+Local machine:
+
+```text
+my-project/
+├── Dockerfile
+├── app.py
+└── config.txt
+```
+
+Dockerfile:
+
+```dockerfile
+FROM python:3.12
+WORKDIR /app
+COPY . .
+```
+
+`COPY . .` ka matlab:
+
+> **Local project ki files ko container/image ke `/app` folder mein copy karo.**
+
+```text
+Local Machine              Docker Image/Container
+     ↓                              ↓
+my-project/                    /app/
+├── app.py        ───────→     ├── app.py
+├── config.txt    ───────→     └── config.txt
+```
+
+### Specific file bhi copy kar sakte ho
+
+```dockerfile
+COPY app.py /app/
+```
+
+Ya:
+
+```dockerfile
+COPY requirements.txt .
+```
+
+Yahan `.` ka matlab **current `WORKDIR`** hai.
+
+### Important
+
+`COPY` mainly **build time** par kaam karta hai.
+
+```text
+Dockerfile
+   ↓
+docker build
+   ↓
+COPY files
+   ↓
+Docker Image
+   ↓
+docker run
+   ↓
+Container
+```
+
+🧠 **Yaad rakho:**
+**`COPY = Local machine se files/folders → Docker image ke andar`**
+==============
+copy image ki time chalta hai 
+
+Haan, **exactly**. ✅
+
+`COPY` **Docker image build karte time** chalta hai, `docker run` ke time nahi.
+
+```text
+Dockerfile
+   ↓
+docker build
+   ↓
+COPY runs here
+   ↓
+Docker Image
+   ↓
+docker run
+   ↓
+Container
+```
+
+Example:
+
+```dockerfile
+FROM python:3.12
+WORKDIR /app
+COPY . .
+```
+
+Jab tum:
+
+```bash
+docker build -t myapp .
+```
+
+karte ho, tab `COPY . .` local files ko image ke `/app` mein copy karta hai.
+
+Phir:
+
+```bash
+docker run myapp
+```
+
+par woh already image mein copied files **container mein available** hoti hain.
+
+🧠 **Shortcut:**
+**COPY → `docker build` time**
+**CMD/ENTRYPOINT → `docker run` time**
+=============
 
 ### 47. What is `ADD`?
+### `ADD` kya hai?
+
+`ADD` bhi `COPY` ki tarah **files/folders ko Docker image ke andar copy** karta hai.
+
+```dockerfile
+ADD app.py /app/
+```
+
+Matlab:
+
+```text
+Local machine → Docker image → /app/app.py
+```
+
+### `ADD` aur `COPY` mein difference
+
+**`COPY`** → Simple file/folder copy.
+
+**`ADD`** → Copy ke saath kuch extra features bhi deta hai, jaise **local `.tar` archive ko automatically extract** karna.
+
+Example:
+
+```dockerfile
+ADD app.tar /app/
+```
+
+Docker `.tar` ko `/app` mein extract kar sakta hai.
+
+👉 **Best practice:** Normal files copy karne ke liye generally **`COPY` prefer** karo. `ADD` tab use karo jab uske special features actually chahiye.
+
+🧠 **Yaad rakho:**
+**COPY = simple copy**
+**ADD = copy + extra features**
 
 ### 48. COPY vs ADD?
+### `COPY` vs `ADD`
+
+| `COPY`                                  | `ADD`                                            |
+| --------------------------------------- | ------------------------------------------------ |
+| Files/folders copy karta hai            | Files/folders copy karta hai                     |
+| Simple & predictable                    | Extra features hain                              |
+| `.tar` automatically extract nahi karta | Local `.tar` automatically extract kar sakta hai |
+| Generally preferred                     | Special cases mein use                           |
+| Easy to understand                      | More behavior                                    |
+
+### Example
+
+```dockerfile
+COPY app.py /app/
+```
+
+Simple file copy.
+
+```dockerfile
+ADD app.tar /app/
+```
+
+`.tar` archive ko extract kar sakta hai.
+
+🧠 **Interview shortcut:**
+
+> **COPY = simple copy → preferred**
+> **ADD = copy + extra features → only when needed**
+
 
 ### 49. What is `RUN`?
+### `RUN` kya hai?
+
+`RUN` Dockerfile mein **image build karte waqt command execute** karta hai.
+
+Example:
+
+```dockerfile
+FROM ubuntu
+RUN apt update
+RUN apt install -y nginx
+```
+
+Matlab:
+
+```text
+docker build
+    ↓
+RUN apt update
+    ↓
+RUN nginx install
+    ↓
+Docker Image ready
+```
+
+### Iska kaam kya hai?
+
+Image ke andar **software install, configuration, files create/update** karne ke liye.
+
+Examples:
+
+```dockerfile
+RUN apt update
+RUN pip install flask
+RUN npm install
+RUN mkdir /app/logs
+```
+
+### Important difference
+
+`RUN` **container start hone par nahi**, **image build hone par** chalta hai.
+
+```text
+RUN        → docker build time
+CMD        → docker run/start time
+```
+
+🧠 **Yaad rakho:**
+**`RUN = Image banate waqt command chalao.`**
 
 ### 50. What is `CMD`?
 
