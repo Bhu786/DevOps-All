@@ -3802,23 +3802,841 @@ python test.py
 ### Follow-up questions
 
 ### 82. Can CMD be overridden?
+Yes. ✅ **`CMD` can be overridden.**
+
+Suppose Dockerfile:
+
+```dockerfile
+CMD ["python", "app.py"]
+```
+
+Normally:
+
+```bash
+docker run myapp
+```
+
+runs:
+
+```text
+python app.py
+```
+
+But you can override it:
+
+```bash
+docker run myapp python test.py
+```
+
+Now it runs:
+
+```text
+python test.py
+```
+
+### 🧠 Remember
+
+> **CMD = default command → easily override kar sakte ho.**
+
+### `CMD` vs `ENTRYPOINT`
+
+```dockerfile
+ENTRYPOINT ["python"]
+CMD ["app.py"]
+```
+
+Then:
+
+```bash
+docker run myapp
+```
+
+→ `python app.py`
+
+```bash
+docker run myapp test.py
+```
+
+→ `python test.py`
+
+Here `ENTRYPOINT` stays fixed, while `CMD`'s value is replaced by the runtime argument.
+
+👉 **Interview line:**
+
+> **"Yes, CMD can be overridden by providing a command when running the container."**
 
 ### 83. Can ENTRYPOINT be overridden?
+Yes, but **not in the same way as `CMD`**. ✅
+
+### `ENTRYPOINT`
+
+Suppose:
+
+```dockerfile
+ENTRYPOINT ["python"]
+CMD ["app.py"]
+```
+
+Normally:
+
+```bash
+docker run myapp
+```
+
+➡️ `python app.py`
+
+If you do:
+
+```bash
+docker run myapp test.py
+```
+
+➡️ `python test.py`
+
+Here **ENTRYPOINT is NOT overridden**. `test.py` becomes an argument to `python`.
+
+---
+
+### How to actually override ENTRYPOINT?
+
+Use:
+
+```bash
+docker run --entrypoint /bin/bash myapp
+```
+
+Now:
+
+```text
+ENTRYPOINT ["python"]
+        ↓
+--entrypoint /bin/bash
+        ↓
+ENTRYPOINT replaced
+```
+
+So `/bin/bash` becomes the container's executable.
+
+### 🧠 Remember
+
+```text
+CMD        → normal docker run command can override it
+ENTRYPOINT → use --entrypoint to override it
+```
+
+👉 **Interview line:**
+
+> "`ENTRYPOINT` can be overridden using Docker's `--entrypoint` option, while normal arguments passed to `docker run` are typically appended to the ENTRYPOINT rather than replacing it."
 
 ### 84. What does `docker run --entrypoint` do?
+## What does `docker run --entrypoint` do?
+
+`--entrypoint` ka use **Dockerfile mein defined `ENTRYPOINT` ko replace/override** karne ke liye hota hai.
+
+### Example
+
+Dockerfile:
+
+```dockerfile
+FROM ubuntu:22.04
+
+ENTRYPOINT ["python"]
+CMD ["app.py"]
+```
+
+Normally:
+
+```bash
+docker run myapp
+```
+
+➡️ Runs:
+
+```text
+python app.py
+```
+
+Now:
+
+```bash
+docker run --entrypoint /bin/bash myapp
+```
+
+➡️ Dockerfile ka:
+
+```text
+ENTRYPOINT ["python"]
+```
+
+replace ho gaya:
+
+```text
+ENTRYPOINT → /bin/bash
+```
+
+So container `/bin/bash` se start hoga.
+
+### Why is it useful?
+
+Mostly **debugging/troubleshooting** ke liye.
+
+Suppose application start nahi ho rahi:
+
+```bash
+docker run --entrypoint /bin/bash myapp
+```
+
+Ab container ke andar jaakar check kar sakte ho:
+
+```bash
+ls
+env
+cat config.yaml
+```
+
+### 🧠 Remember
+
+```text
+docker run image command
+        ↓
+CMD override
+
+docker run --entrypoint xxx image
+        ↓
+ENTRYPOINT override
+```
+
+👉 **Interview line:**
+
+> "`docker run --entrypoint` overrides the image's default ENTRYPOINT and allows us to start the container with a different executable."
 
 ### 85. Shell form vs exec form?
+## Shell form vs Exec form in Docker
+
+Ye mainly **`RUN`, `CMD`, aur `ENTRYPOINT`** mein dekhne ko milta hai.
+
+### 1. Shell form
+
+Command ko shell ke through run karta hai.
+
+```dockerfile
+CMD python app.py
+```
+
+Equivalent conceptually:
+
+```text
+/bin/sh -c "python app.py"
+```
+
+### 2. Exec form ⭐
+
+JSON array format hota hai:
+
+```dockerfile
+CMD ["python", "app.py"]
+```
+
+Yahan Docker **directly `python` process** start karta hai, shell ke through nahi.
+
+---
+
+### Main difference
+
+| Shell form                  | Exec form                                   |
+| --------------------------- | ------------------------------------------- |
+| `CMD python app.py`         | `CMD ["python", "app.py"]`                  |
+| Shell involved              | Shell normally involved nahi                |
+| `/bin/sh -c`                | Direct process                              |
+| Signal handling less direct | Better signal handling                      |
+| Shell features available    | Shell features automatically available nahi |
+
+### Example: `CMD`
+
+**Shell form:**
+
+```dockerfile
+CMD python app.py
+```
+
+Flow:
+
+```text
+Docker
+ ↓
+/bin/sh
+ ↓
+python app.py
+```
+
+**Exec form:**
+
+```dockerfile
+CMD ["python", "app.py"]
+```
+
+Flow:
+
+```text
+Docker
+ ↓
+python app.py
+```
+
+### Why exec form is preferred for applications?
+
+Especially production containers mein:
+
+```dockerfile
+CMD ["python", "app.py"]
+```
+
+Better hai because application directly main process (`PID 1`) ban sakti hai, so **OS signals like SIGTERM** more directly reach the application.
+
+This helps graceful shutdown.
+
+---
+
+### Shell features chahiye toh?
+
+For example:
+
+```dockerfile
+CMD echo "Hello" && echo "World"
+```
+
+Shell form mein `&&` shell handle karta hai.
+
+Exec form mein:
+
+```dockerfile
+CMD ["sh", "-c", "echo Hello && echo World"]
+```
+
+Agar shell behavior explicitly chahiye, exec form ke andar shell explicitly specify kar sakte ho.
+
+### 🧠 Yaad rakho
+
+> **Shell form = command through shell**
+> **Exec form = command directly**
+
+👉 **Interview line:**
+
+> **"Shell form executes the command through a shell, while exec form starts the executable directly. Exec form is generally preferred for container applications because it provides better process and signal handling."**
 
 ### 86. Why is exec form preferred?
+## Why is Exec form preferred in Docker?
+
+Main reason: **better process and signal handling**. ⭐
+
+Example:
+
+```dockerfile
+CMD ["python", "app.py"]
+```
+
+### 1. Application directly main process hoti hai
+
+Exec form:
+
+```text
+Docker
+  ↓
+python app.py
+  ↓
+Application = PID 1
+```
+
+Shell form:
+
+```dockerfile
+CMD python app.py
+```
+
+usually:
+
+```text
+Docker
+  ↓
+/bin/sh -c
+  ↓
+python app.py
+```
+
+Yahan shell beech mein aa sakta hai.
+
+---
+
+### 2. Signals properly reach application ⭐
+
+When you do:
+
+```bash
+docker stop myapp
+```
+
+Docker sends a stop signal to the container's main process.
+
+With exec form, application directly main process hai, so signal handling is more predictable.
+
+```text
+docker stop
+    ↓
+SIGTERM
+    ↓
+Application
+    ↓
+Graceful shutdown
+```
+
+This is especially important for **production applications**.
+
+---
+
+### 3. No unnecessary shell
+
+Exec form:
+
+```dockerfile
+CMD ["nginx", "-g", "daemon off;"]
+```
+
+Docker directly starts `nginx`.
+
+Shell form:
+
+```dockerfile
+CMD nginx -g "daemon off;"
+```
+
+normally involves a shell.
+
+---
+
+### 4. Arguments are handled predictably
+
+Exec form:
+
+```dockerfile
+CMD ["python", "app.py"]
+```
+
+Each item is a separate argument.
+
+This avoids some shell parsing/quoting behavior.
+
+---
+
+## 🧠 Easy shortcut
+
+> **Exec form = Direct process → better PID 1 + signal handling + predictable arguments**
+
+### Interview line
+
+> **"Exec form is preferred because it starts the application directly without an intermediate shell, providing better signal handling, process management, and predictable argument handling."**
 
 ### 87. How does signal handling differ between shell and exec form?
+## Shell vs Exec form — Signal handling
+
+This is an important **Docker interview question**.
+
+### 1. Exec form ✅
+
+```dockerfile
+CMD ["python", "app.py"]
+```
+
+Flow:
+
+```text
+docker stop
+     ↓
+ SIGTERM
+     ↓
+python process (PID 1)
+     ↓
+Application receives signal
+     ↓
+Graceful shutdown
+```
+
+Because the application itself is normally the container's **PID 1**, it can directly receive and handle the signal.
+
+---
+
+### 2. Shell form ⚠️
+
+```dockerfile
+CMD python app.py
+```
+
+Docker normally runs it through a shell:
+
+```text
+docker stop
+     ↓
+ SIGTERM
+     ↓
+/bin/sh (PID 1)
+     ↓
+python app.py
+```
+
+The problem is that the shell may **not forward the signal to the child application process** in the way you expect.
+
+So the application may not receive `SIGTERM` properly and may not get a chance to gracefully shut down.
+
+---
+
+### Example
+
+Suppose application needs 10 seconds to:
+
+```text
+save data
+close DB connection
+finish request
+```
+
+With proper exec-form signal handling:
+
+```text
+SIGTERM
+  ↓
+App receives it
+  ↓
+Cleanup
+  ↓
+Exit
+```
+
+With problematic shell-form behavior:
+
+```text
+SIGTERM
+  ↓
+Shell
+  ↓
+App may not receive/handle it properly
+  ↓
+Graceful cleanup may not happen
+```
+
+Docker eventually uses a **forceful kill (`SIGKILL`) after the stop timeout** if the container hasn't exited.
+
+---
+
+### ⭐ Important nuance
+
+Shell form is **not always broken**. A shell script can explicitly forward signals, for example with `exec`:
+
+```sh
+#!/bin/sh
+exec python app.py
+```
+
+Here `exec` replaces the shell with Python, so Python becomes PID 1.
+
+That's why the safest simple recommendation for application commands is:
+
+```dockerfile
+CMD ["python", "app.py"]
+```
+
+### 🧠 Interview shortcut
+
+> **Exec form → App becomes PID 1 → signals reach app directly.**
+
+> **Shell form → Shell can become PID 1 → signal forwarding may be problematic.**
+
+👉 **Interview line:**
+
+> "`Exec` form provides more reliable signal handling because the application runs directly as the container's main process, whereas shell form introduces a shell that may not properly forward signals to the child process."
 
 ### 88. Why does PID 1 matter inside a container?
+## Why does PID 1 matter inside a container?
+
+Container ke andar **PID 1 = main process** hota hai. ⭐
+
+Example:
+
+```dockerfile
+CMD ["python", "app.py"]
+```
+
+Container ke andar:
+
+```text
+PID 1
+  ↓
+python app.py
+```
+
+### 1. Signal handling ⭐
+
+Docker jab:
+
+```bash
+docker stop myapp
+```
+
+karta hai, container ke main process ko termination signal bhejta hai.
+
+Agar application PID 1 hai:
+
+```text
+docker stop
+    ↓
+SIGTERM
+    ↓
+PID 1 (Application)
+    ↓
+Graceful shutdown
+```
+
+Isliye exec form useful hai:
+
+```dockerfile
+CMD ["python", "app.py"]
+```
+
+---
+
+### 2. PID 1 has special Linux behavior
+
+Container ke PID namespace mein PID 1 **special role** rakhta hai.
+
+Normal Linux processes ke unlike, PID 1 ko certain signals ke liye special handling/default behavior hota hai. Agar application PID 1 ke roop mein signals handle nahi karti, shutdown behavior unexpected ho sakta hai.
+
+---
+
+### 3. Zombie/orphan process handling
+
+PID 1 ko container ke orphaned child processes ko **reap** karne ki responsibility bhi ho sakti hai.
+
+Complex applications ke liye lightweight init such as:
+
+```bash
+docker run --init myapp
+```
+
+useful ho sakta hai.
+
+---
+
+### Simple example
+
+❌ Shell form:
+
+```dockerfile
+CMD python app.py
+```
+
+```text
+PID 1 → /bin/sh
+           ↓
+       python app.py
+```
+
+✅ Exec form:
+
+```dockerfile
+CMD ["python", "app.py"]
+```
+
+```text
+PID 1 → python app.py
+```
+
+### 🧠 Yaad rakho
+
+> **PID 1 = container ka main process.**
+
+Aur:
+
+> **PID 1 matters because it is the primary target for container lifecycle signals and has special process-management responsibilities.**
+
+👉 **Interview line:**
+
+> "PID 1 matters in containers because it is the container's main process and has special responsibilities for signal handling and reaping child processes, which directly affects graceful shutdown and process management."
 
 ### 89. What happens when PID 1 doesn't handle SIGTERM correctly?
+If **PID 1 doesn't handle SIGTERM correctly**, the container may **not shut down gracefully**.
+
+### Simple flow
+
+```text
+docker stop mycontainer
+        ↓
+Docker sends SIGTERM
+        ↓
+PID 1
+        ↓
+Doesn't handle/forward SIGTERM properly
+        ↓
+Application keeps running
+        ↓
+Docker waits for stop timeout
+        ↓
+Docker sends SIGKILL
+        ↓
+Application is forcefully killed
+```
+
+### What problems can happen?
+
+1. **Graceful shutdown doesn't happen**
+
+   * App doesn't get time to finish current requests.
+
+2. **Requests can be interrupted**
+
+   * Users may get failed/incomplete requests.
+
+3. **Data can be lost/corrupted**
+
+   * If the application was writing data and gets force-killed.
+
+4. **Connections aren't cleaned up**
+
+   * DB connections, files, sockets, etc. may not close properly.
+
+5. **Child processes may remain unmanaged**
+
+   * PID 1 is also responsible for reaping orphaned child processes.
+
+### Example
+
+Bad:
+
+```dockerfile
+CMD python app.py
+```
+
+Here a shell may become PID 1:
+
+```text
+PID 1 → /bin/sh
+          ↓
+       python app.py
+```
+
+Better:
+
+```dockerfile
+CMD ["python", "app.py"]
+```
+
+Now:
+
+```text
+PID 1 → python app.py
+```
+
+So `SIGTERM` reaches the application more directly.
+
+### 🧠 Interview shortcut
+
+> **If PID 1 doesn't handle SIGTERM properly, the container may fail to shut down gracefully and eventually be force-killed with SIGKILL after Docker's stop timeout.**
 
 ### 90. Why can an application fail to shut down gracefully inside Docker?
+An application can fail to shut down gracefully inside Docker mainly because **SIGTERM doesn't reach the application properly, or the application doesn't handle it**.
 
+### Common reasons
+
+**1. PID 1 doesn't handle SIGTERM**
+
+```text
+Docker
+  ↓ SIGTERM
+PID 1 (shell)
+  ↓
+Application
+```
+
+The shell may not forward the signal correctly to the application.
+
+**2. Using shell form**
+
+```dockerfile
+CMD python app.py
+```
+
+A shell can become PID 1 instead of Python.
+
+Better:
+
+```dockerfile
+CMD ["python", "app.py"]
+```
+
+Now Python can be PID 1.
+
+---
+
+**3. Application doesn't handle SIGTERM**
+
+The application itself may not have shutdown logic.
+
+For example, it doesn't:
+
+```text
+receive SIGTERM
+      ↓
+stop accepting new requests
+      ↓
+finish existing requests
+      ↓
+close DB connections
+      ↓
+exit
+```
+
+---
+
+**4. Application takes too long to shut down**
+
+Docker waits for the stop timeout. If the application still hasn't exited:
+
+```text
+SIGTERM
+  ↓
+wait
+  ↓
+timeout
+  ↓
+SIGKILL
+```
+
+`SIGKILL` cannot be caught or handled, so the process is immediately terminated.
+
+---
+
+**5. Multiple processes inside the container**
+
+If one container runs several processes:
+
+```text
+PID 1
+ ├── app
+ ├── worker
+ └── child process
+```
+
+PID 1 may not properly forward signals or manage child processes.
+
+---
+
+**6. PID 1 doesn't reap child processes**
+
+Poor process management can leave zombie processes and cause lifecycle problems, especially for applications spawning many children.
+
+### 🧠 Interview shortcut
+
+> **Graceful shutdown fails when SIGTERM doesn't reach the application, the application doesn't handle SIGTERM, or it takes longer than the Docker stop timeout.**
+
+**Best practice:** use **exec-form `CMD/ENTRYPOINT`**, make the application handle **SIGTERM**, and use an init process such as `docker run --init` when appropriate.
+  
 ---
 
 # LEVEL 5 — Docker Image Internals
