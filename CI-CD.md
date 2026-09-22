@@ -1,4 +1,26 @@
-Very simple:
+| Concept                        | Jenkins                                 | GitHub Actions                           |
+| ------------------------------ | --------------------------------------- | ---------------------------------------- |
+| **Main automation definition** | Pipeline                                | Workflow                                 |
+| **Configuration file**         | `Jenkinsfile`                           | `.github/workflows/*.yml`                |
+| **Central management**         | Controller                              | GitHub platform                          |
+| **Execution machine**          | Agent                                   | Runner                                   |
+| **Execution slot**             | Executor                                | Runner/job execution                     |
+| **Unit of work**               | Job                                     | Job                                      |
+| **Individual task**            | Step                                    | Step                                     |
+| **Reusable automation**        | Plugin / Shared Library                 | Action                                   |
+| **Trigger**                    | Trigger / Webhook / Poll SCM            | Event (`push`, `pull_request`, etc.)     |
+| **Source code**                | SCM/Git plugin                          | GitHub repository                        |
+| **Secrets**                    | Jenkins Credentials                     | GitHub Secrets                           |
+| **Variables**                  | Environment variables                   | Variables / `env`                        |
+| **Build output**               | Artifact                                | Artifact                                 |
+| **Deployment target**          | Environment / server                    | Environment                              |
+| **Job dependency**             | `downstream/upstream` or pipeline logic | `needs`                                  |
+| **Parallel execution**         | Parallel stages / multiple executors    | Multiple jobs / matrix                   |
+| **Notifications**              | Plugins                                 | Actions / integrations                   |
+| **Container execution**        | Docker/Kubernetes plugins               | Container jobs / runners                 |
+| **Kubernetes integration**     | Kubernetes plugin                       | Kubernetes actions / `kubectl` / runners |
+========================
+===============================
 
 ### CI vs CD
 
